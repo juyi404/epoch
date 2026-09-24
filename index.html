@@ -568,17 +568,22 @@ const DAY = 86400000;
   requestAnimationFrame(frame);
 })();
 
-/* ---------- Dust: sparse white particles drifting toward the viewer ---------- */
+/* ---------- Galaxy: a tilted spiral disc turning slowly behind the timeline, with dust drifting toward the viewer ---------- */
 const drift = (() => {
   const cv = $("#dust"), ctx = cv.getContext("2d", { alpha: false });
-  let W, H, dpr = 1, bg, running = !document.hidden, boost = 0, raf = 0, lastDraw = 0;
+  let W, H, dpr = 1, bg, disc, running = !document.hidden, boost = 0, spin = 0, angle = 0, raf = 0, lastDraw = 0;
   let hx = innerWidth / 2, hxTo = hx; // 光晕中心，跟随焦点
+  const mobile = innerWidth < 760;
+  const TILT = -0.14, SQUASH = 0.5; // 星系盘的倾角与压扁程度
+  // 三种星色：白、冷蓝白、暖金白
+  const TINT = ["255,255,255", "214,226,255", "255,236,208"];
   const pts = [];
-  const N = innerWidth < 760 ? 110 : 200;
+  const N = mobile ? 90 : 160;
   const spawn = (p, z) => {
     p.x = (Math.random() - 0.5) * 2.4; p.y = (Math.random() - 0.5) * 1.6;
     p.z = z ?? Math.random() * 0.9 + 0.1;
     p.tw = Math.random() * Math.PI * 2;
+    p.c = TINT[Math.random() < 0.7 ? 0 : Math.random() < 0.6 ? 1 : 2];
     return p;
   };
   for (let i = 0; i < N; i++) pts.push(spawn({}));
@@ -589,18 +594,28 @@ const drift = (() => {
     lastDraw = now;
     const v = reduceMotion ? 0 : (0.00022 + 0.008 * Math.exp(-t * 1.2) + boost) * dt;
     boost *= Math.pow(0.94, dt);
+    spin *= Math.pow(0.95, dt);
+    // 常速约 12 分钟一圈，开场快转后减速，切换节点时顺着方向再推一把
+    if (!reduceMotion) angle += (0.00014 + 0.004 * Math.exp(-t * 1.2) + spin) * dt;
     hx = reduceMotion ? hxTo : hx + (hxTo - hx) * (1 - Math.exp(-dt / 14));
     const cx = W * 0.5, cy = H * 0.58, f = Math.max(W, H) * 0.5;
     ctx.globalAlpha = 1;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.drawImage(bg, 0, 0);
+    // 星系盘：先倾斜压扁成椭圆，再在盘面内自转，中心跟着焦点轻微漂移
+    const gx = cx + (hx - cx) * 0.18, gy = H * 0.6;
+    ctx.setTransform(dpr, 0, 0, dpr, dpr * gx, dpr * gy);
+    ctx.rotate(TILT);
+    ctx.scale(1, SQUASH);
+    ctx.rotate(angle);
+    ctx.drawImage(disc, -disc.R, -disc.R, disc.R * 2, disc.R * 2);
     // 光晕：横 46vw、纵 38vh 的椭圆，中心压在时间线附近
     ctx.setTransform(dpr * W * 0.46, 0, 0, dpr * H * 0.38, dpr * hx, dpr * H * 0.62);
     ctx.fillStyle = haze;
     ctx.fillRect(-1, -1, 2, 2);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.fillStyle = "#fff";
     const streak0 = Math.abs(boost) * 900;
+    let cur = "";
     for (const p of pts) {
       p.z -= v;
       if (p.z <= 0.03) { spawn(p, 1); continue; }
@@ -612,6 +627,7 @@ const drift = (() => {
       const vx = (sx - cx) / (W * 1.2), vy = (sy - H * 0.5) / (H * 0.95);
       const vig = Math.min(1, Math.max(0, (Math.sqrt(vx * vx + vy * vy) - 0.55) / 0.45));
       ctx.globalAlpha = (0.08 + near * 0.55) * (0.75 + 0.25 * Math.sin(t * 1.3 + p.tw)) * (1 - vig);
+      if (p.c !== cur) { cur = p.c; ctx.fillStyle = `rgb(${cur})`; }
       const r = 0.4 + near * 1.3;
       const streak = Math.min(24, streak0 * near); // 跳转时拉出短短的横向拖影
       ctx.fillRect(sx - r - streak, sy - r * 0.5, r * 2 + streak * 2, r);
@@ -631,6 +647,53 @@ const drift = (() => {
     }
     tc.putImageData(img, 0, 0);
   }
+  // 星系盘只画一次：核球 + 两条对数螺旋臂 + 盘面散星，之后每帧整张旋转贴上
+  const seed = (() => { let x = 20221130; return () => (x = (x * 1664525 + 1013904223) >>> 0) / 4294967296; })();
+  const gauss = () => { let u = 0, v = 0; while (!u) u = seed(); while (!v) v = seed(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
+  function makeDisc() {
+    const Rg = Math.max(W, H) * 0.95; // 盘半径（CSS 像素），旋臂能扫过整个视口
+    const k = Math.min(dpr, 3000 / (Rg * 2)); // 离屏画布封顶 3000px，省显存
+    const size = Math.ceil(Rg * 2 * k);
+    const c = document.createElement("canvas");
+    c.width = c.height = size;
+    const g = c.getContext("2d");
+    g.setTransform(k, 0, 0, k, size / 2, size / 2);
+    // 盘面的乳白底光：核心亮、外缘散尽
+    const glow = g.createRadialGradient(0, 0, 0, 0, 0, Rg);
+    glow.addColorStop(0, "rgba(255, 244, 228, 0.2)");
+    glow.addColorStop(0.1, "rgba(235, 236, 250, 0.1)");
+    glow.addColorStop(0.4, "rgba(220, 226, 250, 0.025)");
+    glow.addColorStop(1, "rgba(0, 0, 0, 0)");
+    g.fillStyle = glow;
+    g.fillRect(-Rg, -Rg, Rg * 2, Rg * 2);
+    const star = (x, y, r, alpha, tint) => {
+      g.globalAlpha = alpha;
+      g.fillStyle = `rgb(${tint})`;
+      g.fillRect(x - r, y - r, r * 2, r * 2);
+    };
+    const n = mobile ? 2200 : 4200;
+    for (let i = 0; i < n; i++) {
+      const u = seed();
+      let r, th;
+      if (u < 0.18) { // 核球：高斯团
+        r = Math.abs(gauss()) * Rg * 0.08; th = seed() * Math.PI * 2;
+      } else if (u < 0.86) { // 旋臂：r = a·e^(bθ)，两臂相差 180°，越往外越散
+        const arm = seed() < 0.5 ? 0 : Math.PI;
+        const tt = Math.sqrt(seed()) * 2.9;
+        r = Rg * 0.06 * Math.exp(0.92 * tt) + gauss() * Rg * (0.01 + 0.028 * tt);
+        th = tt + arm + gauss() * 0.09;
+      } else { // 盘面散星：越靠外越稀
+        r = Math.sqrt(seed()) * Rg * (0.4 + seed() * 0.6); th = seed() * Math.PI * 2;
+      }
+      if (r > Rg * 0.98) continue;
+      const edge = 1 - Math.pow(r / Rg, 2.2); // 外缘渐隐
+      const big = seed() < 0.08;
+      const tint = TINT[seed() < 0.62 ? 0 : seed() < 0.55 ? 1 : 2];
+      star(Math.cos(th) * r, Math.sin(th) * r, big ? 1.1 + seed() * 0.8 : 0.45 + seed() * 0.5, (big ? 0.9 : 0.3 + seed() * 0.45) * edge, tint);
+    }
+    c.R = Rg;
+    return c;
+  }
   const resize = () => {
     dpr = Math.min(devicePixelRatio || 1, 1.5);
     W = innerWidth; H = innerHeight;
@@ -649,9 +712,10 @@ const drift = (() => {
     vg.addColorStop(1, "#000");
     bc.fillStyle = vg;
     bc.fillRect(-1, -1, 2, 2);
+    disc = makeDisc();
     draw(performance.now());
   };
-  // 开场加速和跳转拖影时满帧，平时粒子几乎不动，30fps 足够
+  // 开场加速和跳转拖影时满帧，平时星系转得极慢，30fps 足够
   const loop = now => {
     raf = 0;
     if (!running) return;
@@ -667,7 +731,11 @@ const drift = (() => {
     running = !document.hidden;
     if (running) start(); else { cancelAnimationFrame(raf); raf = 0; }
   });
-  const fn = dir => { if (!reduceMotion) boost = Math.max(-0.02, Math.min(0.02, boost + 0.007 * dir)); };
+  const fn = dir => {
+    if (reduceMotion) return;
+    boost = Math.max(-0.02, Math.min(0.02, boost + 0.007 * dir));
+    spin = Math.max(-0.012, Math.min(0.012, spin + 0.0025 * dir));
+  };
   fn.focus = x => {
     if (x === hxTo) return;
     hxTo = x;
