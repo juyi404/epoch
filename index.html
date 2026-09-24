@@ -747,7 +747,7 @@ const drift = (() => {
   const seed = (() => { let x = 20221130; return () => (x = (x * 1664525 + 1013904223) >>> 0) / 4294967296; })();
   const gauss = () => { let u = 0, v = 0; while (!u) u = seed(); while (!v) v = seed(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
   function makeDisc(size) {
-    const Rg = Math.max(innerWidth, innerHeight) * 0.8; // 盘半径（CSS 像素）
+    const Rg = (Math.max(innerWidth, innerHeight) || 1200) * 0.8; // 盘半径（CSS 像素）；窗口尺寸暂时为 0 时兜底
     const k = size / (Rg * 2); // 贴图分辨率：桌面 4096，盘上每个 CSS 像素约 1.6 个纹素
     const c = document.createElement("canvas");
     c.width = c.height = size;
