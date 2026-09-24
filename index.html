@@ -660,18 +660,31 @@ const drift = (() => {
     g.setTransform(k, 0, 0, k, size / 2, size / 2);
     // 盘面的乳白底光：核心亮、外缘散尽
     const glow = g.createRadialGradient(0, 0, 0, 0, 0, Rg);
-    glow.addColorStop(0, "rgba(255, 244, 228, 0.2)");
-    glow.addColorStop(0.1, "rgba(235, 236, 250, 0.1)");
-    glow.addColorStop(0.4, "rgba(220, 226, 250, 0.025)");
+    glow.addColorStop(0, "rgba(255, 244, 228, 0.3)");
+    glow.addColorStop(0.1, "rgba(235, 236, 250, 0.15)");
+    glow.addColorStop(0.4, "rgba(220, 226, 250, 0.045)");
     glow.addColorStop(1, "rgba(0, 0, 0, 0)");
     g.fillStyle = glow;
     g.fillRect(-Rg, -Rg, Rg * 2, Rg * 2);
+    // 沿两条臂扫一层柔光，臂的走向不用靠单颗星也看得出
+    g.globalAlpha = 1;
+    for (let arm = 0; arm < 2; arm++) {
+      for (let tt = 0; tt < 2.9; tt += 0.05) {
+        const r = Rg * 0.06 * Math.exp(0.92 * tt), th = tt + arm * Math.PI;
+        const w = Rg * (0.03 + 0.05 * tt), fade = (1 - tt / 3.1) * 0.09;
+        const gr = g.createRadialGradient(Math.cos(th) * r, Math.sin(th) * r, 0, Math.cos(th) * r, Math.sin(th) * r, w);
+        gr.addColorStop(0, `rgba(228, 232, 250, ${fade.toFixed(3)})`);
+        gr.addColorStop(1, "rgba(228, 232, 250, 0)");
+        g.fillStyle = gr;
+        g.fillRect(Math.cos(th) * r - w, Math.sin(th) * r - w, w * 2, w * 2);
+      }
+    }
     const star = (x, y, r, alpha, tint) => {
       g.globalAlpha = alpha;
       g.fillStyle = `rgb(${tint})`;
       g.fillRect(x - r, y - r, r * 2, r * 2);
     };
-    const n = mobile ? 2200 : 4200;
+    const n = mobile ? 3000 : 6000;
     for (let i = 0; i < n; i++) {
       const u = seed();
       let r, th;
@@ -687,9 +700,9 @@ const drift = (() => {
       }
       if (r > Rg * 0.98) continue;
       const edge = 1 - Math.pow(r / Rg, 2.2); // 外缘渐隐
-      const big = seed() < 0.08;
+      const big = seed() < 0.1;
       const tint = TINT[seed() < 0.62 ? 0 : seed() < 0.55 ? 1 : 2];
-      star(Math.cos(th) * r, Math.sin(th) * r, big ? 1.1 + seed() * 0.8 : 0.45 + seed() * 0.5, (big ? 0.9 : 0.3 + seed() * 0.45) * edge, tint);
+      star(Math.cos(th) * r, Math.sin(th) * r, big ? 1.2 + seed() * 0.9 : 0.5 + seed() * 0.55, (big ? 1 : 0.4 + seed() * 0.5) * edge, tint);
     }
     c.R = Rg;
     return c;
