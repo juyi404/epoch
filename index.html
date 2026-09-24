@@ -575,10 +575,10 @@ const DAY = 86400000;
 /* ---------- Galaxy: a tilted spiral disc turning slowly behind the timeline, with dust drifting toward the viewer ---------- */
 const drift = (() => {
   const cv = $("#dust"), ctx = cv.getContext("2d", { alpha: false });
-  let W, H, dpr = 1, bg, disc, running = !document.hidden, boost = 0, spin = 0, angle = 0, raf = 0, lastDraw = 0;
+  let W, H, dpr = 1, gd = 1, bg, disc, mid, mc, gal, gc, running = !document.hidden, boost = 0, spin = 0, angle = 0, raf = 0, lastDraw = 0;
   let hx = innerWidth / 2, hxTo = hx; // 光晕中心，跟随焦点
   const mobile = innerWidth < 760;
-  const TILT = -0.14, SQUASH = 0.5; // 星系盘的倾角与压扁程度
+  const TILT = -0.22, SQUASH = 0.56; // 星系盘的倾角与压扁程度
   // 三种星色：白、冷蓝白、暖金白
   const TINT = ["255,255,255", "214,226,255", "255,236,208"];
   const pts = [];
@@ -606,13 +606,17 @@ const drift = (() => {
     ctx.globalAlpha = 1;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.drawImage(bg, 0, 0);
-    // 星系盘：先倾斜压扁成椭圆，再在盘面内自转，中心跟着焦点轻微漂移
-    const gx = cx + (hx - cx) * 0.18, gy = H * 0.6;
-    ctx.setTransform(dpr, 0, 0, dpr, dpr * gx, dpr * gy);
-    ctx.rotate(TILT);
-    ctx.scale(1, SQUASH);
-    ctx.rotate(angle);
-    ctx.drawImage(disc, -disc.R, -disc.R, disc.R * 2, disc.R * 2);
+    // 星系盘：中心跟着焦点轻微漂移；视角极缓慢地摆动，像镜头在绕着它漂
+    const gx = cx + (hx - cx) * 0.08, gy = H * 0.5;
+    const tilt = TILT + (reduceMotion ? 0 : 0.03 * Math.sin(t / 9)), sq = SQUASH + (reduceMotion ? 0 : 0.03 * Math.sin(t / 13 + 1));
+    // 投影很贵，转动极慢时只在角度/视角/位置变了一点点之后才重投影，平时贴缓存
+    const moving = now - t0 < 3000 || Math.abs(boost) > 0.0004 || Math.abs(hxTo - hx) > 0.5;
+    if (moving || Math.abs(angle - lp.angle) > 0.0009 || Math.abs(tilt - lp.tilt) > 0.003 || Math.abs(sq - lp.sq) > 0.003 || Math.abs(gx - lp.gx) > 0.5) {
+      project(gx, gy, tilt, sq);
+      lp.angle = angle; lp.tilt = tilt; lp.sq = sq; lp.gx = gx;
+    }
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.drawImage(gal, 0, 0, cv.width, cv.height);
     // 光晕：横 46vw、纵 38vh 的椭圆，中心压在时间线附近
     ctx.setTransform(dpr * W * 0.46, 0, 0, dpr * H * 0.38, dpr * hx, dpr * H * 0.62);
     ctx.fillStyle = haze;
@@ -637,6 +641,52 @@ const drift = (() => {
       ctx.fillRect(sx - r - streak, sy - r * 0.5, r * 2 + streak * 2, r);
     }
   }
+  const bulge = ctx.createRadialGradient(0, 0, 0, 0, 0, 1);
+  bulge.addColorStop(0, "rgba(255, 238, 214, 0.22)");
+  bulge.addColorStop(0.3, "rgba(255, 240, 222, 0.07)");
+  bulge.addColorStop(1, "rgba(255, 240, 222, 0)");
+  const lp = { angle: 1e9, tilt: 0, sq: 0, gx: 0 };
+  const depth = ctx.createLinearGradient(0, -1, 0, 1);
+  depth.addColorStop(0, "rgba(0, 0, 0, 0.58)");
+  depth.addColorStop(1, "rgba(0, 0, 0, 1)");
+  function project(gx, gy, tilt, sq) {
+    // 先把盘按当前角度转好，画进一张中间画布
+    const Rg = disc.R, Sm = mid.width;
+    mc.setTransform(1, 0, 0, 1, 0, 0);
+    mc.clearRect(0, 0, Sm, Sm);
+    mc.setTransform(Sm / (2 * Rg), 0, 0, Sm / (2 * Rg), Sm / 2, Sm / 2);
+    mc.rotate(angle);
+    mc.drawImage(disc, -Rg, -Rg, Rg * 2, Rg * 2);
+    // 透视：把转好的盘切成横条贴上，靠近观众的一侧放大、远侧缩小并压暗，平面的椭圆就有了前后
+    const P = 0.2, STRIPS = mobile ? 24 : 36;
+    const sc = v => 1 / (1 - P * v / Rg); // v>0 为靠近观众的一侧
+    const yOf = v => v * sq * sc(v);
+    gc.setTransform(1, 0, 0, 1, 0, 0);
+    gc.clearRect(0, 0, gal.width, gal.height);
+    gc.setTransform(gd, 0, 0, gd, gd * gx, gd * gy);
+    gc.rotate(tilt);
+    // 条与条严丝合缝地拼，不能重叠：半透明的图叠一像素就是一道亮线
+    gc.globalAlpha = 1;
+    for (let j = 0; j < STRIPS; j++) {
+      const v0 = -Rg + 2 * Rg * j / STRIPS, v1 = v0 + 2 * Rg / STRIPS, vm = (v0 + v1) / 2;
+      const y0 = yOf(v0), y1 = yOf(v1), sm = sc(vm);
+      const sy = (v0 + Rg) / (2 * Rg) * Sm, sh = Sm / STRIPS;
+      gc.drawImage(mid, 0, sy, Sm, sh, -Rg * sm, y0, 2 * Rg * sm, y1 - y0);
+    }
+    // 远端压暗：沿视线方向擦掉一部分透明度
+    gc.globalCompositeOperation = "destination-in";
+    gc.fillStyle = depth;
+    gc.setTransform(gd, 0, 0, gd, gd * gx, gd * gy);
+    gc.rotate(tilt);
+    gc.scale(1, Rg * sq);
+    gc.fillRect(-4 * Rg, -1, 8 * Rg, 2);
+    gc.globalCompositeOperation = "source-over";
+    // 核球：一团不压扁的暖光鼓在盘心，让中心是个球而不是个点
+    gc.setTransform(gd * Rg * 0.16, 0, 0, gd * Rg * 0.16, gd * gx, gd * gy);
+    gc.globalAlpha = 1;
+    gc.fillStyle = bulge;
+    gc.fillRect(-1, -1, 2, 2);
+  }
   const haze = ctx.createRadialGradient(0, 0, 0, 0, 0, 1);
   haze.addColorStop(0, "rgba(255, 255, 255, 0.045)");
   haze.addColorStop(1, "rgba(255, 255, 255, 0)");
@@ -656,63 +706,89 @@ const drift = (() => {
   const gauss = () => { let u = 0, v = 0; while (!u) u = seed(); while (!v) v = seed(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
   function makeDisc() {
     const Rg = Math.max(W, H) * 0.95; // 盘半径（CSS 像素），旋臂能扫过整个视口
-    const k = Math.min(dpr, 3000 / (Rg * 2)); // 离屏画布封顶 3000px，省显存
+    const k = Math.min(dpr, 2400 / (Rg * 2)); // 离屏画布封顶 2400px，省显存
     const size = Math.ceil(Rg * 2 * k);
     const c = document.createElement("canvas");
     c.width = c.height = size;
     const g = c.getContext("2d");
     g.setTransform(k, 0, 0, k, size / 2, size / 2);
-    // 盘面的乳白底光：核心亮、外缘散尽
+    const A = 0.055, B = 0.9, TMAX = 3.3; // 对数螺旋 r = A·Rg·e^(B·θ)，每条臂绕约 190°
+    const armR = tt => Rg * A * Math.exp(B * tt);
+    const soft = (x, y, w, rgb, alpha) => { // 一团柔光
+      const gr = g.createRadialGradient(x, y, 0, x, y, w);
+      gr.addColorStop(0, `rgba(${rgb}, ${alpha.toFixed(3)})`);
+      gr.addColorStop(0.5, `rgba(${rgb}, ${(alpha * 0.35).toFixed(3)})`);
+      gr.addColorStop(1, `rgba(${rgb}, 0)`);
+      g.fillStyle = gr;
+      g.fillRect(x - w, y - w, w * 2, w * 2);
+    };
+    // 沿臂的明暗起伏：几段正弦叠出来，让臂有疏密而不是一根均匀的管子
+    const ripple = (tt, ph) => 0.7 + 0.3 * Math.sin(tt * 3.1 + ph) * Math.sin(tt * 1.7 + ph * 0.6 + 1);
+    // 1. 盘面底光：核心暖白，往外迅速转成冷蓝灰，占整个盘
     const glow = g.createRadialGradient(0, 0, 0, 0, 0, Rg);
-    glow.addColorStop(0, "rgba(255, 244, 228, 0.3)");
-    glow.addColorStop(0.1, "rgba(235, 236, 250, 0.15)");
-    glow.addColorStop(0.4, "rgba(220, 226, 250, 0.045)");
+    glow.addColorStop(0, "rgba(255, 240, 220, 0.42)");
+    glow.addColorStop(0.05, "rgba(250, 238, 224, 0.2)");
+    glow.addColorStop(0.16, "rgba(226, 230, 248, 0.07)");
+    glow.addColorStop(0.5, "rgba(214, 222, 248, 0.03)");
     glow.addColorStop(1, "rgba(0, 0, 0, 0)");
     g.fillStyle = glow;
     g.fillRect(-Rg, -Rg, Rg * 2, Rg * 2);
-    // 沿两条臂扫一层柔光，臂的走向不用靠单颗星也看得出
-    g.globalAlpha = 1;
-    for (let arm = 0; arm < 2; arm++) {
-      for (let tt = 0; tt < 2.9; tt += 0.05) {
-        const r = Rg * 0.06 * Math.exp(0.92 * tt), th = tt + arm * Math.PI;
-        const w = Rg * (0.03 + 0.05 * tt), fade = (1 - tt / 3.1) * 0.09;
-        const gr = g.createRadialGradient(Math.cos(th) * r, Math.sin(th) * r, 0, Math.cos(th) * r, Math.sin(th) * r, w);
-        gr.addColorStop(0, `rgba(228, 232, 250, ${fade.toFixed(3)})`);
-        gr.addColorStop(1, "rgba(228, 232, 250, 0)");
-        g.fillStyle = gr;
-        g.fillRect(Math.cos(th) * r - w, Math.sin(th) * r - w, w * 2, w * 2);
+    // 2. 两条主臂 + 两条弱一半的副臂（错开 90°），副臂只到一半长
+    const arms = [[0, 1, TMAX], [Math.PI, 1, TMAX], [Math.PI / 2, 0.42, TMAX * 0.62], [-Math.PI / 2, 0.42, TMAX * 0.62]];
+    arms.forEach(([off, str, tmax], ai) => {
+      for (let tt = 0.15; tt < tmax; tt += 0.035) {
+        const r = armR(tt), th = tt + off;
+        const w = Rg * (0.022 + 0.052 * tt);
+        const fade = Math.pow(1 - tt / (tmax + 0.4), 1.4) * ripple(tt, ai * 2.3);
+        soft(Math.cos(th) * r, Math.sin(th) * r, w, "222, 228, 250", 0.075 * str * fade);
       }
-    }
+    });
+    // 3. 尘埃带：贴着每条主臂内侧压一道暗痕，臂就有了"厚度"
+    arms.slice(0, 2).forEach(([off]) => {
+      for (let tt = 0.5; tt < TMAX * 0.9; tt += 0.035) {
+        const r = armR(tt) * 0.9, th = tt + off;
+        const w = Rg * (0.012 + 0.03 * tt), fade = (1 - tt / TMAX) * 0.26;
+        soft(Math.cos(th) * r, Math.sin(th) * r, w, "0, 0, 0", fade);
+      }
+    });
+    // 4. 星点
     const star = (x, y, r, alpha, tint) => {
       g.globalAlpha = alpha;
       g.fillStyle = `rgb(${tint})`;
       g.fillRect(x - r, y - r, r * 2, r * 2);
     };
-    const n = mobile ? 3000 : 6000;
+    const n = mobile ? 3200 : 6500;
     for (let i = 0; i < n; i++) {
       const u = seed();
-      let r, th;
-      if (u < 0.18) { // 核球：高斯团
-        r = Math.abs(gauss()) * Rg * 0.08; th = seed() * Math.PI * 2;
-      } else if (u < 0.86) { // 旋臂：r = a·e^(bθ)，两臂相差 180°，越往外越散
-        const arm = seed() < 0.5 ? 0 : Math.PI;
-        const tt = Math.sqrt(seed()) * 2.9;
-        r = Rg * 0.06 * Math.exp(0.92 * tt) + gauss() * Rg * (0.01 + 0.028 * tt);
-        th = tt + arm + gauss() * 0.09;
+      let r, th, onArm = 0;
+      if (u < 0.16) { // 核球：高斯团
+        r = Math.abs(gauss()) * Rg * 0.07; th = seed() * Math.PI * 2;
+      } else if (u < 0.84) { // 旋臂：沿臂密度跟着柔光的疏密走
+        const [off, str, tmax] = arms[seed() < 0.8 ? (seed() < 0.5 ? 0 : 1) : (seed() < 0.5 ? 2 : 3)];
+        const tt = 0.1 + Math.sqrt(seed()) * (tmax - 0.1);
+        if (seed() > ripple(tt, 0) * str) continue;
+        r = armR(tt) + gauss() * Rg * (0.008 + 0.03 * tt);
+        th = tt + off + gauss() * 0.08;
+        onArm = 1;
       } else { // 盘面散星：越靠外越稀
-        r = Math.sqrt(seed()) * Rg * (0.4 + seed() * 0.6); th = seed() * Math.PI * 2;
+        r = Math.sqrt(seed()) * Rg * (0.35 + seed() * 0.65); th = seed() * Math.PI * 2;
       }
       if (r > Rg * 0.98) continue;
-      const edge = 1 - Math.pow(r / Rg, 2.2); // 外缘渐隐
-      const big = seed() < 0.1;
-      const tint = TINT[seed() < 0.62 ? 0 : seed() < 0.55 ? 1 : 2];
-      star(Math.cos(th) * r, Math.sin(th) * r, big ? 1.2 + seed() * 0.9 : 0.5 + seed() * 0.55, (big ? 1 : 0.4 + seed() * 0.5) * edge, tint);
+      const edge = 1 - Math.pow(r / Rg, 2.4); // 外缘渐隐
+      const x = Math.cos(th) * r, y = Math.sin(th) * r;
+      const big = seed() < 0.09;
+      // 臂上多蓝白的年轻星，核球偏暖
+      const tint = TINT[seed() < (onArm ? 0.5 : 0.7) ? 0 : seed() < (r < Rg * 0.12 ? 0.25 : 0.75) ? 1 : 2];
+      if (big && seed() < 0.3) soft(x, y, 3 + seed() * 4, tint, 0.35 * edge); // 少数亮星带一圈光晕
+      star(x, y, big ? 1.1 + seed() * 0.9 : 0.5 + seed() * 0.5, (big ? 1 : 0.4 + seed() * 0.5) * edge, tint);
     }
+    g.globalAlpha = 1;
     c.R = Rg;
     return c;
   }
   const resize = () => {
     dpr = Math.min(devicePixelRatio || 1, 1.5);
+    gd = Math.min(dpr, 1); // 星系投影层的像素比：柔和背景，1 倍就够
     W = innerWidth; H = innerHeight;
     cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
     bg = document.createElement("canvas");
@@ -730,6 +806,15 @@ const drift = (() => {
     bc.fillStyle = vg;
     bc.fillRect(-1, -1, 2, 2);
     disc = makeDisc();
+    // 中间画布：装转好角度的盘，封顶 2400px
+    mid = document.createElement("canvas");
+    mid.width = mid.height = Math.min(disc.width, 1800);
+    mc = mid.getContext("2d");
+    // 投影结果缓存在一张屏幕大小的画布里
+    gal = document.createElement("canvas");
+    gal.width = Math.round(W * gd); gal.height = Math.round(H * gd);
+    gc = gal.getContext("2d");
+    lp.angle = 1e9;
     draw(performance.now());
   };
   // 开场加速和跳转拖影时满帧，平时星系转得极慢，30fps 足够
