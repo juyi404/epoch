@@ -793,7 +793,7 @@ const drift = (() => {
   const lg = { left: 0, top: 0, skip: 0 };
   function glass(busy) {
     const r = panelEl.getBoundingClientRect();
-    if (!r.width) return;
+    if (!r.width || !src.width || !src.height) return; // 窗口尺寸暂时为 0 时（后台标签、刚创建的面板）先不画
     const moved = r.left !== lg.left || r.top !== lg.top;
     lg.left = r.left; lg.top = r.top;
     if (!moved && !busy && (++lg.skip % 3)) return;
