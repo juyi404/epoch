@@ -127,10 +127,13 @@
     position: absolute; left: 0;
     width: min(620px, calc(100% - 2 * var(--px)));
     padding: 24px 30px 22px;
-    background: var(--glass);
-    border: 1px solid var(--edge);
+    /* 毛玻璃：底色放淡，靠背景模糊透出后面的星系；顶部一道细高光模拟玻璃边 */
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0) 40%), rgba(14, 14, 18, 0.42);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 22px;
-    box-shadow: 0 30px 80px -30px #000;
+    box-shadow: 0 30px 80px -30px #000, inset 0 1px 0 rgba(255, 255, 255, 0.08);
     contain: layout style;
     will-change: transform;
     transition: transform .8s var(--ease);
@@ -141,6 +144,7 @@
   .p-when { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 14px; margin-top: 18px; }
   .p-when time { font-family: var(--num); font-weight: 300; font-size: 1.3rem; line-height: 1.2; color: var(--white); font-variant-numeric: tabular-nums; }
   .p-when span { font-family: var(--num); font-weight: 300; font-size: 0.9rem; color: var(--mute); }
+  @supports not (backdrop-filter: blur(1px)) { .panel { background: var(--glass); } }
   .panel h2 {
     margin: 8px 0 0;
     font-size: clamp(1.7rem, 3.4vw, 2.9rem);
