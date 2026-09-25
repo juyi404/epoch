@@ -1,3 +1,3 @@
-.bench/
-.claude/
-index.*.html
+# 参考站的下载副本，不是本项目的内容
+.bench/chron.html
+.bench/chron.json

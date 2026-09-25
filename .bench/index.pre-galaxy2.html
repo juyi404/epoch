@@ -1,0 +1,1098 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>智能纪元编年史 · 2022—2026</title>
+<meta name="description" content="从 ChatGPT（GPT-3.5）上线开始，沿一条时间线穿越生成式 AI 的关键时刻。">
+<link rel="preconnect" href="https://fonts.loli.net">
+<link rel="preconnect" href="https://gstatic.loli.net" crossorigin>
+<link rel="stylesheet" href="https://fonts.loli.net/css2?family=Sora:wght@200..700&family=Noto+Sans+SC:wght@400;700&display=swap">
+<style>
+  :root {
+    --black: #000;
+    --glass: rgba(12, 12, 14, 0.88);
+    --edge: rgba(255, 255, 255, 0.09);
+    --white: #F4F4F6;
+    --silver: #B4B4BC;
+    --mute: #74747D;
+
+    /* 类别色只落在很小的点上，其余一律黑白 */
+    --c-model: #9CCFE0;
+    --c-open: #A3D9BC;
+    --c-product: #E2C29C;
+    --c-policy: #E3A3B0;
+    --c-science: #BFB2E3;
+    --c-industry: #D9D3A0;
+
+    --num: "Sora", "Segoe UI", "Microsoft YaHei", sans-serif;
+    --text: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    --px: clamp(18px, 4vw, 64px);
+    --ease: cubic-bezier(.2, .8, .2, 1);
+    --R: 56px; /* 日蚀半径 */
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    overflow: hidden;
+    background: var(--black);
+    color: var(--white);
+    font-family: var(--text);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  button { font: inherit; color: inherit; }
+  :focus-visible { outline: 1.5px solid var(--white); outline-offset: 3px; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  /* ---------- Atmosphere: black, haze, grain ---------- */
+  #dust { position: fixed; inset: 0; width: 100%; height: 100%; background: #000; }
+  /* 光晕、暗角、颗粒都画在这张画布里：全屏半透明层叠得越多，合成时每帧要混合的像素就越多 */
+
+  .app {
+    position: relative; z-index: 1;
+    height: 100vh; height: 100svh;
+    overflow: hidden;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    grid-template-columns: minmax(0, 1fr);
+    padding: 26px var(--px) 24px;
+  }
+
+  /* ---------- Header ---------- */
+  .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px 40px; flex-wrap: wrap; }
+  .top > div { min-width: 0; }
+  h1 { margin: 0; font-size: 0.95rem; font-weight: 400; letter-spacing: 0.24em; color: var(--white); }
+  .clock {
+    margin: 8px 0 0;
+    font-family: var(--num);
+    font-weight: 200;
+    font-size: clamp(1.6rem, 3vw, 2.6rem);
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    color: var(--white);
+  }
+  .clock .unit { font-family: var(--text); font-weight: 400; font-size: 0.4em; color: var(--mute); margin: 0 0.9em 0 0.3em; vertical-align: 0.55em; }
+  .clock .hms { font-size: 0.5em; color: var(--silver); }
+  .since { margin: 4px 0 0; font-size: 0.8rem; color: var(--mute); }
+
+  .filters { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; max-width: 640px; min-width: 0; }
+  .chip {
+    flex: none;
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 15px;
+    font-size: 0.82rem; line-height: 1.5;
+    color: var(--mute);
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 999px;
+    cursor: pointer;
+    transition: color .2s, border-color .2s, background .2s;
+  }
+  .chip i { width: 6px; height: 6px; border-radius: 50%; background: var(--k, var(--white)); opacity: .35; transition: opacity .2s; }
+  .chip:hover { color: var(--silver); border-color: rgba(255, 255, 255, 0.24); }
+  .chip[aria-pressed="true"] { color: var(--white); border-color: rgba(255, 255, 255, 0.34); background: rgba(255, 255, 255, 0.05); }
+  .chip[aria-pressed="true"] i { opacity: 1; }
+  .chip .n { font-family: var(--num); font-weight: 300; font-size: 0.85em; color: var(--mute); }
+
+  /* ---------- Stage ---------- */
+  .stage { position: relative; margin: 0 calc(-1 * var(--px)); }
+
+  /* 巨大的年份：横向拖影 + 扫描切片，像被高速掠过的字 */
+  .ghost {
+    position: absolute; left: 0; top: 0;
+    margin: 0;
+    font: 700 clamp(7rem, 19vw, 18rem)/1 var(--num);
+    letter-spacing: -0.03em;
+    white-space: nowrap;
+    pointer-events: none;
+    user-select: none;
+    will-change: transform;
+    transition: transform 1.1s var(--ease);
+  }
+  .ghost span {
+    display: block;
+    color: rgba(255, 255, 255, 0.06);
+    text-shadow: -5px 0 rgba(170, 140, 255, 0.07), 5px 0 rgba(130, 255, 210, 0.05);
+    filter: url(#streak);
+    -webkit-mask-image: repeating-linear-gradient(to bottom, #000 0 2px, rgba(0, 0, 0, 0.45) 2px 4px);
+            mask-image: repeating-linear-gradient(to bottom, #000 0 2px, rgba(0, 0, 0, 0.45) 2px 4px);
+  }
+
+  .panel {
+    position: absolute; left: 0;
+    width: min(620px, calc(100% - 2 * var(--px)));
+    padding: 24px 30px 22px;
+    /* 毛玻璃：底色放淡，靠背景模糊透出后面的星系；顶部一道细高光模拟玻璃边 */
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0) 40%), rgba(14, 14, 18, 0.42);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 22px;
+    box-shadow: 0 30px 80px -30px #000, inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    contain: layout style;
+    will-change: transform;
+    transition: transform .8s var(--ease);
+  }
+  .p-head { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; font-size: 0.82rem; color: var(--mute); }
+  .p-head b { font-family: var(--num); font-weight: 500; color: var(--silver); margin-right: 10px; }
+  .p-head .seq { font-family: var(--num); font-weight: 300; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .p-when { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 14px; margin-top: 18px; }
+  .p-when time { font-family: var(--num); font-weight: 300; font-size: 1.3rem; line-height: 1.2; color: var(--white); font-variant-numeric: tabular-nums; }
+  .p-when span { font-family: var(--num); font-weight: 300; font-size: 0.9rem; color: var(--mute); }
+  @supports not (backdrop-filter: blur(1px)) { .panel { background: var(--glass); } }
+  .panel h2 {
+    margin: 8px 0 0;
+    font-size: clamp(1.7rem, 3.4vw, 2.9rem);
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: 0.01em;
+    text-shadow: -1px 0 rgba(170, 130, 255, 0.4), 1px 0 rgba(120, 255, 200, 0.28), 0 0 30px rgba(255, 255, 255, 0.12);
+  }
+  .panel p { margin: 12px 0 0; color: #A3A3AB; font-size: 1rem; line-height: 1.8; max-width: 34em; }
+  .p-meta { display: flex; flex-wrap: wrap; gap: 4px 20px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--edge); font-size: 0.84rem; color: var(--mute); }
+  .p-meta .cat { display: inline-flex; align-items: center; gap: 8px; color: var(--silver); }
+  .p-meta .cat::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--k); }
+
+  .leader { position: absolute; left: 0; width: 1px; background: linear-gradient(to bottom, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0)); transition: transform .8s var(--ease); }
+
+  /* ---------- The line ---------- */
+  .rail { position: absolute; left: 0; right: 0; height: 0; contain: layout style; }
+  .rail-line {
+    position: absolute; left: var(--px); right: var(--px); top: 0; height: 1px;
+    background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.2) 6%, rgba(255, 255, 255, 0.2) 94%, transparent);
+  }
+  .rail-lit { position: absolute; left: 0; top: 0; height: 1px; width: 1000px; transform-origin: 0 0; transform: scaleX(0); background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.6)); transition: transform .8s var(--ease); }
+  .rail-hit { position: absolute; left: 0; right: 0; top: -44px; height: 88px; cursor: ew-resize; touch-action: none; }
+  .rail-hit:focus-visible { outline: none; }
+  .rail-hit:focus-visible ~ .eclipse .ring { border-color: rgba(255, 255, 255, 0.6); }
+
+  /* 节点三种形态：远处压成刻度条，近处是彩色点，重大事件带细环 */
+  .dot {
+    position: absolute; left: 0; top: 0;
+    width: 0; height: 0;
+    transition: transform .8s var(--ease), opacity .8s;
+    cursor: pointer;
+  }
+  .dot:hover { opacity: 1 !important; z-index: 2; }
+  .dot[hidden] { display: none; }
+  .dot::before {
+    content: ""; position: absolute;
+    width: 5px; height: 5px; left: -2.5px; top: -2.5px;
+    border-radius: 50%;
+    background: var(--k);
+    box-shadow: 0 0 0 3px #000;
+    transition: transform .5s var(--ease), background-color .5s, box-shadow .5s;
+  }
+  .dot.major::before { width: 7px; height: 7px; left: -3.5px; top: -3.5px; background: var(--white); box-shadow: 0 0 0 3px #000, 0 0 0 4px color-mix(in srgb, var(--k) 70%, transparent); }
+  /* 远处压成刻度条：5×5 → 1×7，7×7 → 1×13 */
+  .dot.tick::before { transform: scale(.2, 1.4); border-radius: 0; background: rgba(255, 255, 255, 0.34); box-shadow: none; }
+  .dot.tick.major::before { transform: scale(.143, 1.857); background: rgba(255, 255, 255, 0.75); }
+  .dot::after { content: ""; position: absolute; left: -7px; top: -16px; width: 14px; height: 32px; }
+  .dot:hover::before { transform: scale(1.6); }
+  .dot.tick:hover::before { transform: scale(.2, 2.6); background: var(--white); }
+  .dot.tick.major:hover::before { transform: scale(.143, 2.6); }
+
+  .dot .lbl {
+    position: absolute; top: 16px; left: 0;
+    width: var(--lw, 132px); margin-left: calc(var(--lw, 132px) / -2);
+    text-align: center;
+    opacity: 0;
+    transform: translateY(-4px);
+    transition: opacity .35s, transform .5s var(--ease);
+    pointer-events: none;
+    text-shadow: 0 0 8px #000, 0 0 3px #000, 0 0 1px #000;
+  }
+  .dot .lbl time { display: block; font: 300 11px/1 var(--num); color: #8B8B94; letter-spacing: .02em; font-variant-numeric: tabular-nums; }
+  .dot.major .lbl time { color: var(--silver); font-weight: 400; }
+  .dot .lbl em { display: none; margin-top: 7px; font-style: normal; font-size: 12px; line-height: 1.4; color: var(--silver); overflow: hidden; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .dot.near .lbl { opacity: 1; transform: none; }
+  .dot.near.named .lbl em { display: -webkit-box; }
+  .dot .tip {
+    position: absolute; bottom: 18px; left: 0;
+    transform: translateX(-50%);
+    padding: 5px 12px;
+    font-size: 12px; line-height: 1.5;
+    white-space: nowrap;
+    background: rgba(20, 20, 22, 0.94);
+    border: 1px solid var(--edge);
+    border-radius: 999px;
+    opacity: 0; pointer-events: none;
+    transition: opacity .15s;
+  }
+  .dot:hover .tip { opacity: 1; }
+  .dot.cur { visibility: hidden; }
+
+  /* 年份刻度挂在线的上方，把日期留给下方 */
+  .yt { position: absolute; left: 0; top: 0; transition: transform .8s var(--ease), opacity .3s; pointer-events: none; }
+  .yt::before { content: ""; position: absolute; left: 0; top: -26px; width: 1px; height: 32px; background: linear-gradient(to top, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0)); }
+  .yt span { position: absolute; left: 7px; top: -26px; font: 300 13px/1 var(--num); color: var(--mute); transition: color .3s, opacity .3s; text-shadow: 0 0 8px #000, 0 0 2px #000; }
+  .yt.cur span { color: var(--white); font-weight: 500; }
+  .yt.end span { left: auto; right: 7px; }
+  .yt.tight span, .yt.under span { opacity: 0; }
+
+  /* 日蚀：黑色圆盘挡住光线，边缘被背光点亮 */
+  .eclipse { position: absolute; left: 0; top: 0; width: 0; height: 0; pointer-events: none; will-change: transform; transition: transform .8s var(--ease); }
+  .eclipse .disc, .eclipse .ring { position: absolute; left: calc(-1 * var(--R)); top: calc(-1 * var(--R)); width: calc(2 * var(--R)); height: calc(2 * var(--R)); border-radius: 50%; }
+  .eclipse .disc {
+    background: radial-gradient(circle, #000 60%, rgba(0, 0, 0, 0.8));
+    will-change: transform;
+    transition: transform 1.1s var(--ease);
+    box-shadow:
+      inset -3px -4px 3px -1px rgba(255, 255, 255, 0.95),
+      inset -12px -14px 22px -10px rgba(255, 255, 255, 0.4),
+      5px 7px 22px -4px rgba(255, 255, 255, 0.5),
+      12px 16px 60px -8px rgba(255, 255, 255, 0.22),
+      0 0 90px rgba(255, 255, 255, 0.06);
+  }
+  .eclipse .ring { border: 1px solid rgba(255, 255, 255, 0.1); transform: scale(1.35); transition: border-color .2s; }
+  .eclipse .core { position: absolute; left: -3px; top: -3px; width: 6px; height: 6px; border-radius: 50%; background: var(--white); box-shadow: 0 0 10px rgba(255, 255, 255, 0.8); }
+  .eclipse .core::after { content: ""; position: absolute; inset: -9px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, 0.55); }
+
+  /* ---------- Controls ---------- */
+  .controls { display: flex; justify-content: space-between; align-items: center; gap: 12px 24px; flex-wrap: wrap; }
+  .step { display: flex; gap: 12px; }
+  .step button {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 22px;
+    font-size: 0.9rem;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background .2s, border-color .2s;
+  }
+  .step button:hover { background: rgba(255, 255, 255, 0.06); border-color: rgba(255, 255, 255, 0.4); }
+  .step button:disabled { opacity: .3; cursor: default; background: transparent; border-color: rgba(255, 255, 255, 0.22); }
+  .step svg { width: 14px; height: 14px; stroke: currentColor; }
+  .hint { margin: 0; font-size: 0.82rem; color: var(--mute); }
+
+  /* ---------- Load: black, then the rim ignites ---------- */
+  .app:not(.booted) * { transition: none !important; }
+  .booted .rail-line, .booted .dot, .booted .yt { animation: rise 1.4s ease-out .5s both; }
+  .booted .eclipse .disc { animation: ignite 1.8s var(--ease) .2s both; }
+  .booted .panel, .booted .leader { animation: rise 1s ease-out 1.2s both; }
+  @keyframes rise { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes ignite { from { opacity: 0; filter: brightness(0); } 40% { opacity: 1; } to { opacity: 1; filter: brightness(1); } }
+
+  @media (max-height: 700px) and (min-width: 761px) {
+    .panel { padding: 18px 24px 16px; }
+    .panel h2 { font-size: 2.2rem; }
+    .p-when { margin-top: 12px; }
+  }
+  @media (max-width: 760px) {
+    :root { --R: 44px; }
+    .app { padding-top: 20px; }
+    .filters { flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start; max-width: none; width: calc(100% + 2 * var(--px)); margin: 0 calc(-1 * var(--px)); padding: 0 var(--px); scrollbar-width: none; }
+    .filters::-webkit-scrollbar { display: none; }
+    .panel { padding: 18px 20px; border-radius: 18px; }
+    .panel p { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; font-size: 0.92rem; }
+    .ghost { font-size: 7.5rem; }
+    .hint { display: none; }
+    .step { width: 100%; }
+    .step button { flex: 1; justify-content: center; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <filter id="streak" x="-30%" y="-10%" width="160%" height="120%" color-interpolation-filters="sRGB">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="14 0" result="wide"/>
+    <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="soft"/>
+    <feMerge><feMergeNode in="wide"/><feMergeNode in="wide"/><feMergeNode in="soft"/></feMerge>
+  </filter>
+</svg>
+<canvas id="dust" aria-hidden="true"></canvas>
+
+<div class="app" id="app">
+  <header class="top">
+    <div>
+      <h1>智能纪元编年史</h1>
+      <p class="clock" aria-label="距 ChatGPT 上线的时间">T+<span id="days">0</span><span class="unit">天</span><span class="hms" id="hms">00:00:00</span></p>
+      <p class="since">自 2022 年 11 月 30 日 ChatGPT 上线起</p>
+    </div>
+    <div class="filters" id="filters" role="group" aria-label="按类别筛选"></div>
+  </header>
+
+  <section class="stage" id="stage">
+    <p class="ghost" id="ghost" aria-hidden="true"><span id="ghostText"></span></p>
+    <article class="panel" id="panel" style="--k: var(--c-model)">
+      <div class="p-head"><span id="chapter"></span><span class="seq" id="seq"></span></div>
+      <div class="p-when"><time id="pdate"></time><span id="ptplus"></span></div>
+      <h2 id="ptitle"></h2>
+      <p id="pdesc"></p>
+      <div class="p-meta"><span id="porg"></span><span class="cat" id="pcat"></span><span id="pgap"></span></div>
+    </article>
+    <div class="leader" id="leader" aria-hidden="true"></div>
+    <div class="rail" id="rail">
+      <div class="rail-line"></div>
+      <div class="rail-lit" id="railLit"></div>
+      <div class="rail-hit" id="railHit" tabindex="0" role="slider" aria-label="时间线"></div>
+      <div class="eclipse" id="eclipse" aria-hidden="true">
+        <div class="ring"></div>
+        <div class="disc" id="disc"></div>
+        <div class="core"></div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="controls">
+    <div class="step">
+      <button type="button" id="prev"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>上一个</button>
+      <button type="button" id="next">下一个<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button>
+    </div>
+    <p class="hint" id="hint">滚动滚轮、按方向键，或沿时间线拖动</p>
+  </footer>
+  <p class="sr" id="live" aria-live="polite"></p>
+</div>
+
+<script>
+const CATS = {
+  model:    { name: "模型发布",   color: "var(--c-model)" },
+  open:     { name: "开源",       color: "var(--c-open)" },
+  product:  { name: "产品与智能体", color: "var(--c-product)" },
+  policy:   { name: "治理与安全", color: "var(--c-policy)" },
+  science:  { name: "科学",       color: "var(--c-science)" },
+  industry: { name: "产业与资本", color: "var(--c-industry)" },
+};
+
+const YEARS = {
+  2022: ["一个聊天框", "发布时它只被当作一次研究预览。五天后，用户过了一百万。"],
+  2023: ["所有人都在追赶 GPT-4", "巨头入场，中国开启百模大战，开源权重流出，关于风险的公开信第一次登上头条。"],
+  2024: ["能看、能听，也开始思考", "视频生成、原生多模态、推理模型相继出现，AI 拿下两项诺贝尔奖。"],
+  2025: ["开源冲击与智能体之年", "DeepSeek 让低成本训练成为共识，模型从回答问题转向替人完成任务。"],
+  2026: ["前沿加速", "旗舰模型的迭代周期缩短到以周计，最强模型开始限制访问，实验室第一次主动放缓训练。"],
+};
+
+// d: YYYY-MM-DD 或 YYYY-MM(仅到月)
+const EVENTS = [
+  { d: "2022-11-30", c: "product", o: "OpenAI", m: 1, t: "ChatGPT 上线", x: "以 GPT-3.5 系列模型为底座的对话界面作为研究预览免费开放，五天内用户突破一百万。一个聊天框，成了新纪元的起点。" },
+  { d: "2022-12-07", c: "product", o: "Perplexity", t: "Perplexity 上线", x: "把检索和生成合成一个“答案引擎”，直接给出带来源的回答，对话式 AI 搜索由此起步。" },
+  { d: "2022-12-15", c: "policy", o: "Anthropic", t: "Constitutional AI", x: "用一份写定的原则让模型批评、改写自己的输出，再以 AI 反馈做强化学习，减少对人工有害性标注的依赖。" },
+
+  { d: "2023-01-13", c: "policy", o: "艺术家群体", t: "艺术家起诉图像生成公司", x: "Stability AI、Midjourney 等被指用受版权保护的作品训练模型，训练数据的合法性之争就此开打。" },
+  { d: "2023-01-23", c: "industry", o: "微软", t: "微软追加投资 OpenAI", x: "宣布多年期、数十亿美元规模的扩大合作，据报道约 100 亿美元。" },
+  { d: "2023-02-01", c: "industry", o: "OpenAI", t: "ChatGPT 月活用户破亿", x: "瑞银报告估计 ChatGPT 在 1 月的月活已过一亿，上线仅两个月，是当时增长最快的消费级应用。" },
+  { d: "2023-02-07", c: "product", o: "微软", t: "新必应接入 GPT", x: "对话模型进入搜索引擎，沉寂多年的搜索之争重新开打。" },
+  { d: "2023-02-24", c: "open", o: "Meta", t: "LLaMA 发布", x: "面向研究者的模型权重很快在网上流出，开源大模型生态由此被点燃。" },
+  { d: "2023-03-13", c: "open", o: "斯坦福", t: "Alpaca 低成本复刻", x: "用 5.2 万条 GPT-3.5 生成的指令微调 LLaMA-7B，花费约 600 美元，引发复刻闭源模型的热潮。" },
+  { d: "2023-03-14", c: "model", o: "OpenAI", m: 1, t: "GPT-4", x: "支持图像输入，在模拟律师资格考试中进入考生前 10%。同一天，Anthropic 发布第一代 Claude。" },
+  { d: "2023-03-14", c: "model", o: "Anthropic", t: "Claude 发布", x: "与 GPT-4 同日，Anthropic 通过 API 与 Slack、Notion 等合作入口推出第一代 Claude。" },
+  { d: "2023-03-16", c: "product", o: "百度", t: "文心一言发布", x: "中国第一个大厂对话大模型亮相，百模大战开场。" },
+  { d: "2023-03-21", c: "product", o: "Google", t: "Bard 开放测试", x: "谷歌仓促应战，对话产品在美国和英国开放候补。" },
+  { d: "2023-03-23", c: "product", o: "OpenAI", t: "ChatGPT 插件", x: "第三方用 OpenAPI 描述接口，模型自行决定何时调用；浏览器与代码解释器插件一并推出。" },
+  { d: "2023-03-29", c: "policy", o: "未来生命研究所", t: "暂停巨型 AI 实验公开信", x: "上千名研究者与企业家联署，呼吁至少暂停六个月训练比 GPT-4 更强的系统。" },
+  { d: "2023-03-30", c: "product", o: "开源社区", t: "AutoGPT", x: "让 GPT-4 自己拆目标、调工具、循环执行。它还很粗糙，却让“智能体”成了最热的词。" },
+  { d: "2023-04-05", c: "open", o: "Meta", t: "SAM 分割一切", x: "可零样本分割任意图像中的任意物体，配套 10 亿个掩码的数据集，被视作视觉领域的基础模型。" },
+  { d: "2023-04-07", c: "product", o: "阿里", t: "通义千问开启测试", x: "阿里自研大模型对外开放，此后沿 API 与开源 Qwen 两条路线扩张。" },
+  { d: "2023-05-01", c: "policy", o: "Geoffrey Hinton", t: "Hinton 离开谷歌", x: "深度学习先驱表示，离开是为了能更自由地谈论 AI 的风险。" },
+  { d: "2023-05-06", c: "product", o: "科大讯飞", t: "讯飞星火", x: "认知大模型发布，把大模型和讯飞的语音、教育业务绑在一起。" },
+  { d: "2023-05-30", c: "policy", o: "AI 安全中心", t: "一句话的灭绝风险声明", x: "数百位学者与实验室负责人签署：减轻 AI 带来的灭绝风险，应与流行病和核战争一样成为全球优先事项。同日，英伟达市值首次突破一万亿美元。" },
+  { d: "2023-06-05", c: "open", o: "智谱", t: "ChatGLM 开源", x: "面向中文场景优化的对话模型，成为国产开源大模型的早期代表。" },
+  { d: "2023-06-13", c: "product", o: "OpenAI", t: "函数调用", x: "开发者用 JSON Schema 声明函数，模型返回函数名和参数，工具调用从此有了标准接口。" },
+  { d: "2023-06-15", c: "open", o: "百川智能", t: "Baichuan-7B 开源", x: "王小川创立的百川首个模型即开源，以开源加商业的双轨切入。" },
+  { d: "2023-06-20", c: "open", o: "UC Berkeley", t: "vLLM 与 PagedAttention", x: "把 KV 缓存切成可分页映射的块，大幅减少显存浪费，成为大模型推理服务的事实标准。" },
+  { d: "2023-07-06", c: "open", o: "上海 AI 实验室", t: "书生 InternLM", x: "科研机构主导的开源大模型，配套开源完整工具链。" },
+  { d: "2023-07-18", c: "open", o: "Meta", t: "Llama 2 允许商用", x: "开源权重首次以宽松条款面向企业，成为无数衍生模型的底座。" },
+  { d: "2023-08-01", c: "product", o: "Continue", t: "Continue 开源编程助手", x: "以 VS Code 与 JetBrains 扩展提供对话、补全和代码库上下文，开发者可自带模型。" },
+  { d: "2023-08-03", c: "open", o: "阿里", t: "Qwen-7B 开放权重", x: "2.2 万亿 token 预训练，月活一亿以下可直接商用，Qwen 开源系列由此开始。" },
+  { d: "2023-08-15", c: "policy", o: "中国", t: "《生成式人工智能服务管理暂行办法》施行", x: "全球较早专门针对生成式 AI 服务的监管规定之一，多家国产大模型随后获准面向公众上线。" },
+  { d: "2023-08-17", c: "product", o: "字节跳动", t: "豆包", x: "依托云雀大模型的对话助手，借字节的流量与免费策略，很快成为国内用户最多的 AI 应用之一。" },
+  { d: "2023-08-30", c: "product", o: "MiniMax", t: "MiniMax 与海螺 AI", x: "自研大模型与对话应用同步推出，主打多模态与效率。" },
+  { d: "2023-09-07", c: "model", o: "腾讯", t: "腾讯混元", x: "覆盖文本、代码与图像，接入微信和腾讯云。至此，国内互联网巨头都有了自研大模型。" },
+  { d: "2023-09-21", c: "product", o: "微软", t: "Copilot 铺满全线", x: "Bing、Windows 与 Microsoft 365 统一以 Copilot 命名接入 AI，助手成为软件的新交互层。" },
+  { d: "2023-09-25", c: "product", o: "OpenAI", t: "ChatGPT 能看、能听、能说", x: "加入图像理解与语音对话，聊天框第一次有了眼睛和声音。" },
+  { d: "2023-09-27", c: "open", o: "Mistral AI", t: "Mistral 7B", x: "以 Apache 2.0 许可发布，小模型在多项基准上超过 Llama 2 13B，欧洲开源力量登场。" },
+  { d: "2023-10-09", c: "product", o: "月之暗面", t: "Kimi 智能助手", x: "以长上下文、能读长文档为卖点，在国产对话产品中迅速出圈。" },
+  { d: "2023-10-10", c: "science", o: "普林斯顿", t: "SWE-bench", x: "把 2294 个真实 GitHub Issue 变成可执行的评测任务，此后成为编程智能体的主要标尺。" },
+  { d: "2023-10-17", c: "model", o: "百度", t: "文心大模型 4.0", x: "百度称综合能力与 GPT-4 相当，并接入搜索、地图、网盘等全线产品。" },
+  { d: "2023-11-01", c: "policy", o: "英国", t: "布莱切利 AI 安全峰会", x: "28 个国家和欧盟签署《布莱切利宣言》，前沿 AI 风险首次成为政府间议题。" },
+  { d: "2023-11-02", c: "open", o: "零一万物", t: "Yi-34B", x: "李开复创立的零一万物发布 Yi 系列，34B 版本跻身开源模型第一梯队。" },
+  { d: "2023-11-04", c: "model", o: "xAI", t: "Grok", x: "马斯克的 xAI 发布首个模型，实时接入 X 平台，风格少约束。" },
+  { d: "2023-11-06", c: "product", o: "OpenAI", t: "首届开发者大会", x: "发布 GPT-4 Turbo 与可自定义的 GPTs，提出人人都能造自己的助手。" },
+  { d: "2023-11-15", c: "model", o: "阶跃星辰", t: "Step 系列", x: "姜大昕创立的阶跃星辰发布 Step 大模型，主打万亿参数与多模态，“六小龙”格局成形。" },
+  { d: "2023-11-17", c: "industry", o: "OpenAI", m: 1, t: "OpenAI 董事会风波", x: "Sam Altman 被董事会突然解雇，绝大多数员工联名要求其回归。五天后 Altman 复职，董事会改组。" },
+  { d: "2023-12-06", c: "model", o: "Google", t: "Gemini 1.0", x: "谷歌与 DeepMind 合并后的首个旗舰，从一开始就按原生多模态训练。" },
+  { d: "2023-12-11", c: "open", o: "Mistral", t: "Mixtral 8x7B", x: "开源的混合专家模型以小博大，让 MoE 架构走进主流。" },
+  { d: "2023-12-21", c: "model", o: "Midjourney", t: "Midjourney V6", x: "提示遵循和图中文字显著进步，生图从“调氛围”走向按描述出图。" },
+
+  { d: "2024-01-16", c: "model", o: "智谱", t: "GLM-4", x: "对标同期 GPT-4，同时延续开源路线。" },
+  { d: "2024-01-30", c: "science", o: "Neuralink", t: "首例人体脑机植入", x: "患者术后能用意念控制电脑光标，脑机接口进入临床阶段。" },
+  { d: "2024-02-01", c: "open", o: "面壁智能", t: "MiniCPM", x: "小参数、中文友好的开源模型，主打在手机等端侧设备上运行。" },
+  { d: "2024-02-02", c: "product", o: "Apple", t: "Vision Pro 发售", x: "以眼动、手势和语音交互，空间计算第一次成为可以买到的产品。" },
+  { d: "2024-02-15", c: "model", o: "OpenAI", m: 1, t: "Sora 预览", x: "一分钟长度的高保真视频从文字生成，世界模拟器之争开始。同日，Gemini 1.5 带来百万 token 的上下文窗口。" },
+  { d: "2024-02-15", c: "model", o: "Google", t: "Gemini 1.5 百万上下文", x: "与 Sora 同日发布，一次可读数小时视频、整本书或整个代码库，长上下文从演示变成可用能力。" },
+  { d: "2024-02-21", c: "open", o: "Google", t: "Gemma", x: "谷歌首次向社区开放自家模型权重，巨头开始开源闭源两线作战。" },
+  { d: "2024-02-22", c: "model", o: "Stability AI", t: "Stable Diffusion 3", x: "改用多模态扩散 Transformer 架构，文字渲染与多主体遵循明显改善。" },
+  { d: "2024-03-04", c: "model", o: "Anthropic", t: "Claude 3 家族", x: "Opus、Sonnet、Haiku 三档模型发布，Opus 在多项评测中与 GPT-4 并驾齐驱。" },
+  { d: "2024-03-12", c: "product", o: "Cognition", t: "Devin", x: "在沙箱里规划、写代码、跑命令、查文档的软件工程智能体，把“AI 程序员”带进大众视野。" },
+  { d: "2024-03-13", c: "policy", o: "欧盟", t: "欧洲议会通过《人工智能法》", x: "全球第一部全面的 AI 法律，按风险等级分层监管。" },
+  { d: "2024-03-18", c: "product", o: "月之暗面", t: "Kimi 200 万字上下文", x: "一次读完几十本书或整份招股书，成为年初最出圈的国产 AI 应用。" },
+  { d: "2024-03-28", c: "open", o: "AI21 Labs", t: "Jamba 混合架构", x: "首个把 Mamba 状态空间模型与 Transformer 结合的大规模模型，长上下文吞吐更高。" },
+  { d: "2024-04-18", c: "open", o: "Meta", t: "Llama 3", x: "开源模型在对话质量上与闭源的差距进一步缩小。" },
+  { d: "2024-04-23", c: "model", o: "商汤", t: "日日新 5.0", x: "强调知识、数学、推理与代码，CV 起家的商汤全面转向通用大模型。" },
+  { d: "2024-04-27", c: "model", o: "生数科技", t: "Vidu", x: "强调动态一致与角色稳定，是 Sora 之后最早可以试用的国产视频生成产品之一。" },
+  { d: "2024-05-06", c: "open", o: "DeepSeek", t: "DeepSeek-V2 与价格战", x: "MLA 注意力加稀疏 MoE，API 价格远低于同行，直接引爆国内大模型价格战。" },
+  { d: "2024-05-08", c: "science", o: "DeepMind / Isomorphic", t: "AlphaFold 3", x: "从蛋白质扩展到 DNA、RNA、小分子等多类生物分子的联合结构预测。" },
+  { d: "2024-05-13", c: "model", o: "OpenAI", m: 1, t: "GPT-4o", x: "文字、语音、图像在同一个模型里端到端处理，实时语音对话的延迟接近人类。" },
+  { d: "2024-05-14", c: "model", o: "Google", t: "Veo", x: "在 I/O 大会上发布的文生视频模型，与 Sora 正面对位。" },
+  { d: "2024-05-30", c: "product", o: "Anthropic", t: "Claude 工具调用正式可用", x: "Claude 返回结构化的工具调用请求，执行与权限检查仍交给客户端。" },
+  { d: "2024-06-01", c: "model", o: "昆仑万维", t: "天工 / Skywork", x: "以搜索增强对话、多模态和开放权重推进，坚持全栈自研模型。" },
+  { d: "2024-06-06", c: "model", o: "快手", t: "可灵视频模型", x: "中国团队的视频生成模型开放使用，生成视频的竞争变成全球赛。" },
+  { d: "2024-06-06", c: "open", o: "阿里", t: "Qwen2", x: "0.5B 到 72B 全尺寸开源，开源生态从单个模型走向完整系列。" },
+  { d: "2024-06-10", c: "product", o: "Apple", t: "Apple Intelligence", x: "苹果把生成式 AI 写进系统，并在 Siri 中接入 ChatGPT。" },
+  { d: "2024-06-17", c: "model", o: "Runway", t: "Gen-3 Alpha", x: "运动、时序一致性与可控性明显提升，巩固了在广告与影视预演中的位置。" },
+  { d: "2024-06-20", c: "model", o: "Anthropic", t: "Claude 3.5 Sonnet", x: "中档价格给出超越上一代旗舰的能力，尤其擅长写代码。" },
+  { d: "2024-06-21", c: "model", o: "华为", t: "盘古 5.0", x: "覆盖语言、多模态、视觉与科学计算，把昇腾硬件、模型和云绑成国产全栈。" },
+  { d: "2024-07-12", c: "policy", o: "欧盟", t: "AI 法案刊登公报", x: "禁止用途、高风险系统、透明度与通用模型的分层规则正式成文，20 天后生效。" },
+  { d: "2024-07-18", c: "model", o: "OpenAI", t: "GPT-4o mini", x: "以极低价格提供接近 GPT-4o 的能力，小模型加低价成为主流选择。" },
+  { d: "2024-07-23", c: "open", o: "Meta", t: "Llama 3.1 405B", x: "第一个达到前沿水平的开源权重模型。" },
+  { d: "2024-08-01", c: "policy", o: "欧盟", t: "《人工智能法》生效", x: "相关条款在此后数年内分阶段适用。" },
+  { d: "2024-08-01", c: "open", o: "Black Forest Labs", t: "FLUX.1", x: "Stable Diffusion 原班人马出走后的作品，很快成为社区默认的高质量开放生图模型。" },
+  { d: "2024-08-13", c: "model", o: "xAI", t: "Grok-2", x: "支持图像理解与生成，xAI 进入第一梯队，也引来关于约束尺度的争议。" },
+  { d: "2024-08-22", c: "industry", o: "Anysphere", t: "Cursor 融资", x: "完成 6000 万美元 A 轮。它把对话、代码库索引与生成式编辑直接做进编辑器，AI 原生 IDE 路线确立。" },
+  { d: "2024-09-12", c: "model", o: "OpenAI", m: 1, t: "o1：会思考的模型", x: "模型先在内部推理再作答，数学与编程能力跃升。测试时计算成为规模定律之外新的扩展维度。" },
+  { d: "2024-09-13", c: "industry", o: "World Labs", t: "李飞飞创办 World Labs", x: "专注“空间智能”，让 AI 理解三维世界的几何与物理，世界模型从概念走向产品。" },
+  { d: "2024-10-08", c: "science", o: "诺贝尔奖", m: 1, t: "AI 拿下两项诺贝尔奖", x: "物理学奖授予 Hopfield 与 Hinton，表彰神经网络的奠基工作。次日化学奖授予 Hassabis、Jumper（AlphaFold）与 Baker。" },
+  { d: "2024-10-22", c: "product", o: "Anthropic", t: "Claude 学会操作电脑", x: "Computer Use 让模型看屏幕、移动鼠标、敲键盘，像人一样使用软件。" },
+  { d: "2024-10-31", c: "product", o: "OpenAI", t: "ChatGPT 搜索", x: "对话中直接联网检索并附来源链接，正面挑战传统搜索引擎。" },
+  { d: "2024-11-13", c: "product", o: "Codeium", t: "Windsurf", x: "以 Cascade 智能体处理跨文件任务，与 Cursor 争夺 AI 原生 IDE 市场。" },
+  { d: "2024-11-25", c: "open", o: "Anthropic", t: "模型上下文协议 MCP", x: "开源的工具连接标准，后来被各大厂商采用，成为智能体接入外部世界的通用接口。" },
+  { d: "2024-12-03", c: "model", o: "亚马逊", t: "Amazon Nova", x: "覆盖文本、多模态与视频生成的自研模型家族，通过 Bedrock 提供给企业。" },
+  { d: "2024-12-03", c: "open", o: "腾讯", t: "HunyuanVideo 开源", x: "大参数视频生成模型开放权重，进入开源视频模型第一梯队。" },
+  { d: "2024-12-09", c: "product", o: "OpenAI", t: "Sora 正式开放", x: "视频生成从演示变成人人可用的产品。" },
+  { d: "2024-12-09", c: "science", o: "Google", t: "Willow 量子芯片", x: "量子比特越多、错误率反而指数下降，量子纠错迈过关键门槛。" },
+  { d: "2024-12-11", c: "model", o: "Google", t: "Gemini 2.0", x: "谷歌宣布进入智能体时代，模型原生支持工具调用与图像、语音输出。" },
+  { d: "2024-12-20", c: "model", o: "OpenAI", t: "o3 公布", x: "在高算力配置下于 ARC-AGI-1 测试取得 87.5%，推理模型的上限被迅速推高。" },
+  { d: "2024-12-26", c: "open", o: "DeepSeek", t: "DeepSeek-V3", x: "开源 MoE 模型性能比肩顶级闭源，官方披露的最终训练成本约 560 万美元。" },
+
+  { d: "2025-01-15", c: "model", o: "Luma", t: "Ray2", x: "训练算力约为前代十倍，运动更快更连贯。" },
+  { d: "2025-01-20", c: "open", o: "DeepSeek", m: 1, t: "DeepSeek-R1", x: "开源推理模型比肩 o1，并公开了强化学习训练方法。一周后，英伟达单日市值蒸发近六千亿美元，创美股纪录。" },
+  { d: "2025-01-20", c: "model", o: "月之暗面", t: "Kimi K1.5", x: "与 R1 同日发布，用强化学习训练长链推理，多项基准对齐国际头部推理模型。" },
+  { d: "2025-01-21", c: "industry", o: "OpenAI 等", t: "星际之门计划", x: "OpenAI、软银、甲骨文等宣布在美国投入最高 5000 亿美元建设 AI 算力。" },
+  { d: "2025-01-23", c: "product", o: "OpenAI", t: "Operator", x: "能自己打开浏览器、点击网页、完成下单等任务的智能体。" },
+  { d: "2025-02-02", c: "product", o: "OpenAI", t: "Deep Research", x: "花数十分钟自主检索、阅读上百个网页，写出带引用的研究报告。" },
+  { d: "2025-02-17", c: "model", o: "xAI", t: "Grok 3", x: "在约 10 万张 GPU 的 Colossus 集群上训练，主打推理与数学，xAI 进入前沿竞争核心圈。" },
+  { d: "2025-02-24", c: "product", o: "Anthropic", t: "Claude 3.7 Sonnet 与 Claude Code", x: "混合推理模型发布，同时推出在终端里直接读写代码库的编程智能体。" },
+  { d: "2025-02-27", c: "model", o: "OpenAI", t: "GPT-4.5", x: "规模最大的非推理模型，被视作预训练扩展路线的一次总结。" },
+  { d: "2025-03-06", c: "product", o: "Manus", t: "Manus 通用智能体", x: "中国团队发布的通用智能体演示在全球刷屏，邀请码一码难求。" },
+  { d: "2025-03-11", c: "product", o: "OpenAI", t: "Responses API 与 Agents SDK", x: "内置网页搜索、文件搜索和电脑操作工具，并开源管理交接、护栏和追踪的智能体框架。" },
+  { d: "2025-03-16", c: "model", o: "百度", t: "文心 4.5 与 X1", x: "原生多模态与深度思考模型同日上线，文心一言随之免费。" },
+  { d: "2025-03-25", c: "product", o: "OpenAI / Google", t: "原生生图与 Gemini 2.5 Pro", x: "GPT-4o 原生图像生成掀起吉卜力风格热潮；同一天，谷歌发布登顶多个榜单的 Gemini 2.5 Pro。" },
+  { d: "2025-04-05", c: "open", o: "Meta", t: "Llama 4", x: "首批 MoE 架构的 Llama 发布，Scout 版本宣称支持千万 token 上下文。" },
+  { d: "2025-04-16", c: "model", o: "OpenAI", t: "o3 与 o4-mini", x: "推理模型第一次能在思考过程中自主调用搜索、代码执行和看图。" },
+  { d: "2025-04-16", c: "product", o: "OpenAI", t: "Codex CLI", x: "与 o3 同日开源的终端编程智能体，在本地读仓库、改文件、跑命令。" },
+  { d: "2025-04-29", c: "open", o: "阿里巴巴", t: "Qwen3", x: "通义千问开源全尺寸混合推理模型家族，成为全球衍生模型最多的开源系列之一。" },
+  { d: "2025-05-16", c: "product", o: "OpenAI", t: "云端 Codex", x: "每个任务在隔离的云端环境里读仓库、改代码、跑测试，返回可审查的补丁。" },
+  { d: "2025-05-20", c: "model", o: "Google", t: "Veo 3", x: "视频生成第一次同步生成对白、音效与环境声。" },
+  { d: "2025-05-22", c: "model", o: "Anthropic", t: "Claude 4", x: "Opus 4 与 Sonnet 4 发布，可以连续数小时自主完成编程任务。" },
+  { d: "2025-06-11", c: "model", o: "字节跳动", t: "Seedance 1.0", x: "支持文、图输入与多镜头叙事，接入豆包，字节的视频生成走到台前。" },
+  { d: "2025-07-09", c: "model", o: "xAI", t: "Grok 4", x: "在 ARC-AGI-2、Humanity's Last Exam 等高难度评测上刷新当时纪录。" },
+  { d: "2025-07-11", c: "open", o: "月之暗面", t: "Kimi K2", x: "万亿参数的开源 MoE 模型，主打智能体与工具调用能力。" },
+  { d: "2025-07-17", c: "product", o: "OpenAI", t: "ChatGPT Agent", x: "把网页操作、深度研究与代码执行合成一个能自己干活的智能体。" },
+  { d: "2025-07-19", c: "science", o: "OpenAI / DeepMind", m: 1, t: "IMO 金牌线", x: "两家实验室的模型在 2025 年国际数学奥林匹克中以自然语言写出证明，成绩达到金牌分数线。" },
+  { d: "2025-08-05", c: "open", o: "OpenAI", t: "gpt-oss", x: "OpenAI 自 GPT-2 之后首次发布开放权重的语言模型。同日，DeepMind 公布可实时交互的世界模型 Genie 3。" },
+  { d: "2025-08-07", c: "model", o: "OpenAI", m: 1, t: "GPT-5", x: "统一的快慢思考系统，自动判断何时深入推理，并成为 ChatGPT 所有用户的默认模型。" },
+  { d: "2025-08-20", c: "open", o: "DeepSeek", t: "DeepSeek V3.1", x: "扩展上下文、强化工具调用，延续高性价比开源旗舰路线。" },
+  { d: "2025-09-29", c: "model", o: "Anthropic", t: "Claude Sonnet 4.5", x: "在真实软件工程评测中领先，可连续自主工作三十小时以上。" },
+  { d: "2025-09-30", c: "product", o: "OpenAI", t: "Sora 2 与 Sora App", x: "带声音的视频生成加上一个短视频社交应用，AI 视频开始有了自己的平台。" },
+  { d: "2025-11-13", c: "model", o: "OpenAI", t: "GPT-5.1", x: "GPT-5 的稳定升级，重点改进推理速度、成本与工具调用的稳定性。" },
+  { d: "2025-11-18", c: "model", o: "Google", t: "Gemini 3", x: "连同智能体开发环境 Antigravity 与新版 Nano Banana 图像模型一起发布。" },
+  { d: "2025-11-24", c: "model", o: "Anthropic", t: "Claude Opus 4.5", x: "旗舰模型大幅降价，编程、智能体与电脑操作能力全面提升。" },
+  { d: "2025-12-11", c: "model", o: "OpenAI", t: "GPT-5.2", x: "Gemini 3 发布三周后，Altman 内部拉响“红色警报”，GPT-5.2 提前上线，距 5.1 仅隔四周。" },
+  { d: "2025-12-15", c: "open", o: "DeepSeek", t: "DeepSeek V3.2", x: "更激进的稀疏注意力把推理成本继续压低。" },
+
+  { d: "2026-02-05", c: "model", o: "Anthropic", t: "Claude Opus 4.6", x: "上下文扩到百万 token、引入自适应思考，同日 OpenAI 推出 GPT-5.3-Codex 应战。" },
+  { d: "2026-02-12", c: "policy", o: "字节跳动", t: "Seedance 2.0 与版权风暴", x: "写实视频生成迅速出圈，数日内好莱坞片方和行业协会密集发函，全球上线受阻。" },
+  { d: "2026-02-19", c: "model", o: "Google", t: "Gemini 3.1 Pro", x: "ARC-AGI-2 得分较 Gemini 3 Pro 翻倍，新增中等思考档位。此后半年谷歌只更新 Flash，Pro 一直停在预览。" },
+  { d: "2026-03-05", c: "model", o: "OpenAI", t: "GPT-5.4", x: "把 Codex 的编程能力、推理与操作电脑的能力并回一个模型，mini 与 nano 版 3 月 17 日跟进。" },
+  { d: "2026-04-23", c: "model", o: "OpenAI", t: "GPT-5.5", x: "代号 Spud，用更少的 token 完成更多步骤；API 因补充网络安全护栏而晚一天开放。" },
+  { d: "2026-04-24", c: "open", o: "DeepSeek", t: "DeepSeek V4 预览", x: "Pro 与 Flash 预览版以 MIT 许可开源，百万上下文、思考模式与智能体编程并入同一家族；同月 Qwen 3.6、Kimi K2.6 相继发布。" },
+  { d: "2026-04-26", c: "product", o: "OpenAI", t: "Sora 停服", x: "Sora 网页与应用停止服务，API 于 9 月 24 日关停。短视频生成旗舰成了可持续性的反例。" },
+  { d: "2026-05-19", c: "model", o: "Google", t: "Gemini 3.5 Flash", x: "定位高强度智能体与编程任务的主力模型，成为 Flash 系列默认版本。" },
+  { d: "2026-05-28", c: "model", o: "Anthropic", t: "Claude Opus 4.8", x: "Opus 4.x 系列的最后一版，距 4.7 不到两个月，新增可调的努力程度，Anthropic 同时预告更高一级的模型即将到来。" },
+  { d: "2026-06-09", c: "model", o: "Anthropic", m: 1, t: "Claude Fable 5 与受限的 Mythos 5", x: "Claude 5 家族登场。Fable 向公众开放，能力更强的 Mythos 只向受限对象提供，最强模型不再默认公开。三天后美国政府以国家安全为由限制出口，两周半后解除。" },
+  { d: "2026-06-30", c: "model", o: "Anthropic", t: "Claude Sonnet 5", x: "接替 Sonnet 4.6 成为默认模型，以约一半价格接近 Opus 4.8 的水平。同日 Fable 5 的出口限制解除。" },
+  { d: "2026-07-03", c: "model", o: "字节跳动", t: "Seedance 2.5", x: "单次生成最长约 30 秒的连续片段，视频模型的竞争从画质转向原生时长。" },
+  { d: "2026-07-08", c: "product", o: "OpenAI", t: "GPT-Live 全双工语音", x: "ChatGPT 语音能同时听和说，支持同声传译，成为付费与免费用户的默认语音模型。" },
+  { d: "2026-07-09", c: "model", o: "OpenAI", t: "GPT-5.6", x: "Sol、Terra、Luna 三档分别覆盖旗舰能力、成本平衡与高吞吐，并加入多智能体编排与持久推理。" },
+  { d: "2026-07-16", c: "open", o: "月之暗面", t: "Kimi K3", x: "2.8 万亿总参数的 MoE，原生视觉与百万上下文。7 月 27 日开放权重，成为当时参数最大的开源模型。" },
+  { d: "2026-07-21", c: "model", o: "Google", t: "Gemini 3.6 Flash", x: "降低输出价格、保持百万上下文；官方确认 3.5 Pro 仍在测试，Gemini 4 已开始预训练。" },
+  { d: "2026-07-24", c: "model", o: "Anthropic", t: "Claude Opus 5", x: "定价与 Opus 4.8 持平、能力逼近 Fable，成为 Claude Max 的默认模型，支持百万 token 上下文。" },
+  { d: "2026-07-31", c: "open", o: "DeepSeek", t: "DeepSeek-V4-Flash 正式版", x: "取代预览版，思考与非思考双模式；一周后整体上调 API 价格，低价策略出现转折。" },
+  { d: "2026-08-02", c: "policy", o: "欧盟", t: "AI 法扩大执法", x: "面向公众的系统须表明 AI 身份，深度伪造须带机器可读标识，通用模型提供商开始受 AI 办公室监管。" },
+  { d: "2026-08-03", c: "open", o: "阿里", t: "Qwen3.8 与 Qwen3.8-Max", x: "2.4 万亿总参数的稀疏 MoE，原生多模态、百万上下文，并宣布开源 Max 权重。" },
+  { d: "2026-08-04", c: "science", o: "Google DeepMind", t: "Gemini Robotics 2", x: "视觉-语言-动作模型、具身推理与端侧模型一并发布，在人形机器人上演示。" },
+  { d: "2026-08-05", c: "model", o: "字节跳动", t: "SeedRealtime", x: "音频、视频与文本统一在一个端到端全双工模型里，豆包全量上线视频通话。" },
+  { d: "2026-08-06", c: "industry", o: "Google", m: 1, t: "谷歌 AI 领导层重组", x: "Hassabis 转任 Alphabet 首席科学家，Koray Kavukcuoglu 接管 Gemini；Jeff Dean、Oriol Vinyals 等元老离职创业。" },
+  { d: "2026-08-07", c: "product", o: "OpenAI", t: "GPT-5.6 Luna 向免费用户开放", x: "免费档默认模型换成 Luna，可无限次文本聊天，并第一次能主动调用更高推理。" },
+  { d: "2026-08-10", c: "open", o: "Meta", t: "Muse Glimmer 开源", x: "约 30B 的稠密多模态智能体模型，由闭源 Muse Spark 蒸馏而来，可在消费级显卡上本地运行，Meta 重返开源。" },
+  { d: "2026-08-12", c: "model", o: "xAI", t: "Grok 4.6", x: "约 1.5 万亿参数的 MoE，综合智能指数与 GPT-5.6 Sol 持平，价格明显更低。" },
+  { d: "2026-08-13", c: "open", o: "DeepSeek", t: "DeepSeek-V4 Pro 正式版", x: "1.6 万亿参数，首次原生支持图像推理，编程智能体基准从 12.8 跃升到 62.7。" },
+  { d: "2026-08-13", c: "model", o: "Google", t: "Gemini 3.7 Flash", x: "距 3.6 仅三周，编程基准从 49% 升到 65%，Flash 的迭代周期缩到以周计。" },
+  { d: "2026-08-14", c: "model", o: "智谱", t: "GLM-5.3", x: "基座不变，靠大规模强化学习后训练把编程能力提升约五成，主打智能体编程与防御性网络安全。" },
+  { d: "2026-08-18", c: "policy", o: "OpenAI", m: 1, t: "OpenAI 主动放缓前沿训练", x: "内部评估认为下一代旗舰的网络攻防能力可能越过关键阈值，OpenAI 暂停部分训练、加固研究环境，前沿实验室首次公开踩刹车。" },
+  { d: "2026-08-25", c: "industry", o: "OpenAI / 博通", t: "Jalapeño 推理芯片", x: "在 Hot Chips 公布成绩，每瓦性能为英伟达参照系统的 1.5 至 1.9 倍，年底前部署到自有机房。" },
+  { d: "2026-08-26", c: "open", o: "智谱", t: "GLM-5.3-Flash 开源", x: "此前匿名登顶 OpenRouter 的 Ox Alpha 身份揭晓：GLM-5 系列首个原生多模态模型，约 10 万张国产芯片训练，MIT 许可开源。" },
+  { d: "2026-08-26", c: "open", o: "阿里", t: "Qwen3.8-Flash 开源", x: "125B 总参、仅激活 6B，采用稀疏与线性混合注意力，训练成本下降约九成。" },
+  { d: "2026-08-28", c: "open", o: "腾讯", t: "混元 Hy4 预览版开源", x: "770B 总参、49B 激活，上下文破百万，以 Apache 2.0 许可开放，并首次参与自身研发。" },
+  { d: "2026-09-01", c: "model", o: "Anthropic", t: "Claude Fable 5.1", x: "Fable 与 Mythos 同步升级到 5.1，价格不变，缓存读取降价四分之三。" },
+  { d: "2026-09-03", c: "model", o: "OpenAI", m: 1, t: "GPT-6 Astra", x: "因 7 月智能体越权攻击事件推迟数周后发布，先向获批用户开放，次日面向付费用户。Brockman 在发布会结尾说：欢迎来到 AGI 时代。编年记录暂止于此。" },
+];
+
+const LAUNCH = Date.UTC(2022, 10, 30, 18, 0, 0); // 2022-11-30 10:00 PST
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const $ = s => document.querySelector(s);
+const DAY = 86400000;
+
+/* ---------- Mission clock ---------- */
+(() => {
+  const daysEl = $("#days"), hmsEl = $("#hms");
+  const pad = n => String(n).padStart(2, "0");
+  const render = ms => {
+    const s = Math.floor(ms / 1000);
+    daysEl.textContent = Math.floor(s / 86400);
+    hmsEl.textContent = `${pad(Math.floor(s % 86400 / 3600))}:${pad(Math.floor(s % 3600 / 60))}:${pad(s % 60)}`;
+  };
+  const t0 = performance.now(), dur = reduceMotion ? 0 : 2200;
+  const frame = now => {
+    const k = dur ? Math.min(1, (now - t0) / dur) : 1;
+    render((Date.now() - LAUNCH) * (1 - Math.pow(1 - k, 4)));
+    if (k < 1) requestAnimationFrame(frame);
+    else setInterval(() => render(Date.now() - LAUNCH), 1000);
+  };
+  requestAnimationFrame(frame);
+})();
+
+/* ---------- Galaxy: a tilted spiral disc turning slowly behind the timeline, with dust drifting toward the viewer ---------- */
+const drift = (() => {
+  const cv = $("#dust"), ctx = cv.getContext("2d", { alpha: false });
+  let W, H, dpr = 1, bg, disc, running = !document.hidden, boost = 0, spin = 0, angle = 0, raf = 0, lastDraw = 0;
+  let hx = innerWidth / 2, hxTo = hx; // 光晕中心，跟随焦点
+  const mobile = innerWidth < 760;
+  const TILT = -0.14, SQUASH = 0.5; // 星系盘的倾角与压扁程度
+  // 三种星色：白、冷蓝白、暖金白
+  const TINT = ["255,255,255", "214,226,255", "255,236,208"];
+  const pts = [];
+  const N = mobile ? 90 : 160;
+  const spawn = (p, z) => {
+    p.x = (Math.random() - 0.5) * 2.4; p.y = (Math.random() - 0.5) * 1.6;
+    p.z = z ?? Math.random() * 0.9 + 0.1;
+    p.tw = Math.random() * Math.PI * 2;
+    p.c = TINT[Math.random() < 0.7 ? 0 : Math.random() < 0.6 ? 1 : 2];
+    return p;
+  };
+  for (let i = 0; i < N; i++) pts.push(spawn({}));
+  const t0 = performance.now();
+  function draw(now) {
+    const t = (now - t0) / 1000;
+    const dt = Math.min(3, lastDraw ? (now - lastDraw) / 16.7 : 1); // 以 60fps 为 1，降帧时步长同比放大
+    lastDraw = now;
+    const v = reduceMotion ? 0 : (0.00022 + 0.008 * Math.exp(-t * 1.2) + boost) * dt;
+    boost *= Math.pow(0.94, dt);
+    spin *= Math.pow(0.95, dt);
+    // 常速约 12 分钟一圈，开场快转后减速，切换节点时顺着方向再推一把
+    if (!reduceMotion) angle += (0.00014 + 0.004 * Math.exp(-t * 1.2) + spin) * dt;
+    hx = reduceMotion ? hxTo : hx + (hxTo - hx) * (1 - Math.exp(-dt / 14));
+    const cx = W * 0.5, cy = H * 0.58, f = Math.max(W, H) * 0.5;
+    ctx.globalAlpha = 1;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.drawImage(bg, 0, 0);
+    // 星系盘：先倾斜压扁成椭圆，再在盘面内自转，中心跟着焦点轻微漂移
+    const gx = cx + (hx - cx) * 0.18, gy = H * 0.6;
+    ctx.setTransform(dpr, 0, 0, dpr, dpr * gx, dpr * gy);
+    ctx.rotate(TILT);
+    ctx.scale(1, SQUASH);
+    ctx.rotate(angle);
+    ctx.drawImage(disc, -disc.R, -disc.R, disc.R * 2, disc.R * 2);
+    // 光晕：横 46vw、纵 38vh 的椭圆，中心压在时间线附近
+    ctx.setTransform(dpr * W * 0.46, 0, 0, dpr * H * 0.38, dpr * hx, dpr * H * 0.62);
+    ctx.fillStyle = haze;
+    ctx.fillRect(-1, -1, 2, 2);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const streak0 = Math.abs(boost) * 900;
+    let cur = "";
+    for (const p of pts) {
+      p.z -= v;
+      if (p.z <= 0.03) { spawn(p, 1); continue; }
+      if (p.z > 1) { spawn(p, 0.1 + Math.random() * 0.2); continue; }
+      const sx = cx + p.x / p.z * f, sy = cy + p.y / p.z * f;
+      if (sx < -20 || sx > W + 20 || sy < -20 || sy > H + 20) { spawn(p, 1); continue; }
+      const near = 1 - p.z;
+      // 暗角：椭圆半径 120% × 95%，55% 以内不压暗
+      const vx = (sx - cx) / (W * 1.2), vy = (sy - H * 0.5) / (H * 0.95);
+      const vig = Math.min(1, Math.max(0, (Math.sqrt(vx * vx + vy * vy) - 0.55) / 0.45));
+      ctx.globalAlpha = (0.08 + near * 0.55) * (0.75 + 0.25 * Math.sin(t * 1.3 + p.tw)) * (1 - vig);
+      if (p.c !== cur) { cur = p.c; ctx.fillStyle = `rgb(${cur})`; }
+      const r = 0.4 + near * 1.3;
+      const streak = Math.min(24, streak0 * near); // 跳转时拉出短短的横向拖影
+      ctx.fillRect(sx - r - streak, sy - r * 0.5, r * 2 + streak * 2, r);
+    }
+  }
+  const haze = ctx.createRadialGradient(0, 0, 0, 0, 0, 1);
+  haze.addColorStop(0, "rgba(255, 255, 255, 0.045)");
+  haze.addColorStop(1, "rgba(255, 255, 255, 0)");
+  // 颗粒：一块随机噪点平铺在黑底上，只在尺寸变化时生成一次
+  const tile = document.createElement("canvas");
+  tile.width = tile.height = 192;
+  {
+    const tc = tile.getContext("2d"), img = tc.createImageData(192, 192), d = img.data;
+    for (let i = 0; i < d.length; i += 4) {
+      d[i] = d[i + 1] = d[i + 2] = 255;
+      d[i + 3] = (Math.random() + Math.random()) * 0.5 * 0.9 * 0.05 * 255;
+    }
+    tc.putImageData(img, 0, 0);
+  }
+  // 星系盘只画一次：核球 + 两条对数螺旋臂 + 盘面散星，之后每帧整张旋转贴上
+  const seed = (() => { let x = 20221130; return () => (x = (x * 1664525 + 1013904223) >>> 0) / 4294967296; })();
+  const gauss = () => { let u = 0, v = 0; while (!u) u = seed(); while (!v) v = seed(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
+  function makeDisc() {
+    const Rg = Math.max(W, H) * 0.95; // 盘半径（CSS 像素），旋臂能扫过整个视口
+    const k = Math.min(dpr, 3000 / (Rg * 2)); // 离屏画布封顶 3000px，省显存
+    const size = Math.ceil(Rg * 2 * k);
+    const c = document.createElement("canvas");
+    c.width = c.height = size;
+    const g = c.getContext("2d");
+    g.setTransform(k, 0, 0, k, size / 2, size / 2);
+    // 盘面的乳白底光：核心亮、外缘散尽
+    const glow = g.createRadialGradient(0, 0, 0, 0, 0, Rg);
+    glow.addColorStop(0, "rgba(255, 244, 228, 0.3)");
+    glow.addColorStop(0.1, "rgba(235, 236, 250, 0.15)");
+    glow.addColorStop(0.4, "rgba(220, 226, 250, 0.045)");
+    glow.addColorStop(1, "rgba(0, 0, 0, 0)");
+    g.fillStyle = glow;
+    g.fillRect(-Rg, -Rg, Rg * 2, Rg * 2);
+    // 沿两条臂扫一层柔光，臂的走向不用靠单颗星也看得出
+    g.globalAlpha = 1;
+    for (let arm = 0; arm < 2; arm++) {
+      for (let tt = 0; tt < 2.9; tt += 0.05) {
+        const r = Rg * 0.06 * Math.exp(0.92 * tt), th = tt + arm * Math.PI;
+        const w = Rg * (0.03 + 0.05 * tt), fade = (1 - tt / 3.1) * 0.09;
+        const gr = g.createRadialGradient(Math.cos(th) * r, Math.sin(th) * r, 0, Math.cos(th) * r, Math.sin(th) * r, w);
+        gr.addColorStop(0, `rgba(228, 232, 250, ${fade.toFixed(3)})`);
+        gr.addColorStop(1, "rgba(228, 232, 250, 0)");
+        g.fillStyle = gr;
+        g.fillRect(Math.cos(th) * r - w, Math.sin(th) * r - w, w * 2, w * 2);
+      }
+    }
+    const star = (x, y, r, alpha, tint) => {
+      g.globalAlpha = alpha;
+      g.fillStyle = `rgb(${tint})`;
+      g.fillRect(x - r, y - r, r * 2, r * 2);
+    };
+    const n = mobile ? 3000 : 6000;
+    for (let i = 0; i < n; i++) {
+      const u = seed();
+      let r, th;
+      if (u < 0.18) { // 核球：高斯团
+        r = Math.abs(gauss()) * Rg * 0.08; th = seed() * Math.PI * 2;
+      } else if (u < 0.86) { // 旋臂：r = a·e^(bθ)，两臂相差 180°，越往外越散
+        const arm = seed() < 0.5 ? 0 : Math.PI;
+        const tt = Math.sqrt(seed()) * 2.9;
+        r = Rg * 0.06 * Math.exp(0.92 * tt) + gauss() * Rg * (0.01 + 0.028 * tt);
+        th = tt + arm + gauss() * 0.09;
+      } else { // 盘面散星：越靠外越稀
+        r = Math.sqrt(seed()) * Rg * (0.4 + seed() * 0.6); th = seed() * Math.PI * 2;
+      }
+      if (r > Rg * 0.98) continue;
+      const edge = 1 - Math.pow(r / Rg, 2.2); // 外缘渐隐
+      const big = seed() < 0.1;
+      const tint = TINT[seed() < 0.62 ? 0 : seed() < 0.55 ? 1 : 2];
+      star(Math.cos(th) * r, Math.sin(th) * r, big ? 1.2 + seed() * 0.9 : 0.5 + seed() * 0.55, (big ? 1 : 0.4 + seed() * 0.5) * edge, tint);
+    }
+    c.R = Rg;
+    return c;
+  }
+  const resize = () => {
+    dpr = Math.min(devicePixelRatio || 1, 1.5);
+    W = innerWidth; H = innerHeight;
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+    bg = document.createElement("canvas");
+    bg.width = cv.width; bg.height = cv.height;
+    const bc = bg.getContext("2d", { alpha: false });
+    bc.fillStyle = "#000";
+    bc.fillRect(0, 0, bg.width, bg.height);
+    bc.fillStyle = bc.createPattern(tile, "repeat");
+    bc.fillRect(0, 0, bg.width, bg.height);
+    // 暗角外圈把颗粒也压暗，和原来叠在上面的效果一致
+    bc.setTransform(bg.width * 1.2, 0, 0, bg.height * 0.95, bg.width / 2, bg.height / 2);
+    const vg = bc.createRadialGradient(0, 0, 0, 0, 0, 1);
+    vg.addColorStop(0.55, "rgba(0, 0, 0, 0)");
+    vg.addColorStop(1, "#000");
+    bc.fillStyle = vg;
+    bc.fillRect(-1, -1, 2, 2);
+    disc = makeDisc();
+    draw(performance.now());
+  };
+  // 开场加速和跳转拖影时满帧，平时星系转得极慢，30fps 足够
+  const loop = now => {
+    raf = 0;
+    if (!running) return;
+    const busy = now - t0 < 3000 || Math.abs(boost) > 0.0004 || Math.abs(hxTo - hx) > 0.5;
+    if (busy || now - lastDraw >= 32) draw(now);
+    raf = requestAnimationFrame(loop);
+  };
+  const start = () => { if (!reduceMotion && running && !raf) { lastDraw = 0; raf = requestAnimationFrame(loop); } };
+  resize();
+  addEventListener("resize", resize);
+  start();
+  document.addEventListener("visibilitychange", () => {
+    running = !document.hidden;
+    if (running) start(); else { cancelAnimationFrame(raf); raf = 0; }
+  });
+  const fn = dir => {
+    if (reduceMotion) return;
+    boost = Math.max(-0.02, Math.min(0.02, boost + 0.007 * dir));
+    spin = Math.max(-0.012, Math.min(0.012, spin + 0.0025 * dir));
+  };
+  fn.focus = x => {
+    if (x === hxTo) return;
+    hxTo = x;
+    if (reduceMotion) draw(performance.now());
+  };
+  return fn;
+})();
+
+/* ---------- Year streak: 换年时拖影从很长收回来（只动 transform/opacity，走合成线程） ---------- */
+const ghostText = $("#ghostText");
+function streak() {
+  if (reduceMotion || !ghostText.animate) return;
+  ghostText.animate(
+    [{ transform: "scaleX(1.6)", opacity: 0 }, { transform: "scaleX(1.12)", opacity: 1, offset: 0.35 }, { transform: "none", opacity: 1 }],
+    { duration: 900, easing: "cubic-bezier(.2, .8, .2, 1)" }
+  );
+}
+
+/* ---------- Events ---------- */
+const utc = d => Date.UTC(+d.slice(0, 4), +d.slice(5, 7) - 1, d.length === 10 ? +d.slice(8) : 15);
+const LAUNCH_DAY = Date.UTC(2022, 10, 30);
+const fmtDate = d => d.length === 10 ? d.replace(/-/g, ".") : `${d.slice(0, 4)}.${d.slice(5, 7)}`;
+
+const all = EVENTS
+  .map((e, i) => ({ e, i, t: utc(e.d) }))
+  .sort((a, b) => a.t - b.t || a.i - b.i)
+  .map(({ e, t }) => ({ ...e, time: t }));
+
+const stage = $("#stage"), rail = $("#rail"), railLit = $("#railLit"), railHit = $("#railHit");
+const eclipse = $("#eclipse"), disc = $("#disc");
+const panel = $("#panel"), leader = $("#leader"), ghost = $("#ghost");
+
+const dots = all.map(e => {
+  const el = document.createElement("div");
+  el.className = "dot" + (e.m ? " major" : "");
+  el.style.setProperty("--k", CATS[e.c].color);
+  el.innerHTML = `<span class="lbl"><time>${e.d.length === 7 ? +e.d.slice(5, 7) + " 月" : fmtDate(e.d).slice(5)}</time><em>${e.t}</em></span><span class="tip">${fmtDate(e.d)}　${e.t}</span>`;
+  el.addEventListener("click", () => go(vis.indexOf(el)));
+  el._e = e;
+  rail.insertBefore(el, eclipse);
+  return el;
+});
+
+const yearTicks = {};
+Object.keys(YEARS).forEach(y => {
+  const el = document.createElement("div");
+  el.className = "yt";
+  el.innerHTML = `<span>${y}</span>`;
+  rail.insertBefore(el, dots[0]);
+  yearTicks[y] = el;
+});
+
+let vis = dots.slice(), k = 0, spin = 0;
+
+const M = {};
+function measure() {
+  M.W = stage.clientWidth; M.H = stage.clientHeight;
+  M.left = stage.getBoundingClientRect().left;
+  M.px = parseFloat(getComputedStyle($("#app")).paddingLeft) || 40;
+  M.R = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--R")) || 56;
+  M.pw = panel.offsetWidth;
+  M.gw = ghost.offsetWidth; M.gh = ghost.offsetHeight;
+}
+// 只在值变化时写入，避免每次切换都让 71 个节点重新算样式
+const put = (el, key, val, write) => { if (el[key] !== val) { el[key] = val; write(val); } };
+const setTf = (el, v) => put(el, "_tf", v, v => { el.style.transform = v; });
+const setOp = (el, v) => put(el, "_op", v, v => { el.style.opacity = v; });
+const setCls = (el, name, on) => { if (el.classList.contains(name) !== on) el.classList.toggle(name, on); };
+
+/* 每段间距 = 底宽 + 以焦点为中心的高斯隆起：焦点两侧对称展开，远处压成等距刻度 */
+function makeXs() {
+  const W = M.W;
+  const px = M.px;
+  const r = M.R * 0.8;
+  const L = px + r, D = W - px - r - L;
+  const n = vis.length;
+  if (n < 2) return [L + D / 2];
+  const wide = W >= 760, sig = wide ? 2.2 : 1.6;
+  const G = wide ? Math.min(165, D * 0.15) : D * 0.25; // 焦点旁的目标间距
+  const bump = vis.slice(1).map((_, j) => Math.exp(-(((j + 0.5 - k) / sig) ** 2)));
+  const S = bump.reduce((a, b) => a + b, 0);
+  const P = Math.max(0, (G * (n - 1) - D) / Math.max(1e-6, D - G * S));
+  const w = bump.map(b => 1 + P * b);
+  const total = w.reduce((a, b) => a + b, 0);
+  const xs = [L];
+  w.forEach(v => xs.push(xs[xs.length - 1] + v / total * D));
+  return xs;
+}
+
+function layout() {
+  const { H, W, R, px, pw, gw, gh } = M;
+  const railY = Math.round(H * (W < 760 ? 0.8 : 0.78));
+  put(rail, "_top", railY, v => { rail.style.top = v + "px"; });
+
+  const n = vis.length, xs = makeXs(), wide = W >= 760;
+  const near = new Set(), named = new Map();
+  // 标签从焦点往两侧贪心铺开：彼此不挤、也不钻进日蚀
+  const minGap = wide ? 66 : 50, cx0 = xs[k];
+  [-1, 1].forEach(dir => {
+    const side = [];
+    let last = cx0;
+    for (let i = k + dir, step = 1; i >= 0 && i < n && step <= 6; i += dir, step++) {
+      const x = xs[i];
+      if (Math.abs(x - cx0) < R + 26) continue;
+      if (Math.abs(x - last) < (last === cx0 ? R + 26 : minGap)) continue;
+      near.add(i);
+      side.push(i);
+      last = x;
+    }
+    // 最靠近焦点的两个标签写出事件名，宽度按左右可用空间算，最多两行
+    if (!wide) return;
+    let prevHalf = 0;
+    side.slice(0, 2).forEach((i, j) => {
+      const next = side[j + 1];
+      const inner = j === 0 ? Math.abs(xs[i] - cx0) - R - 10 : Math.abs(xs[i] - xs[side[j - 1]]) - prevHalf - 8;
+      const outer = next === undefined ? 90 : Math.abs(xs[next] - xs[i]) - 20;
+      const half = Math.min(inner, outer, 80);
+      if (half >= 40) { named.set(i, Math.floor(half * 2)); prevHalf = half; }
+      else prevHalf = 17;
+    });
+  });
+
+  const shown = new Set(vis);
+  dots.forEach(el => { if (!shown.has(el) && !el.hidden) el.hidden = true; });
+  vis.forEach((el, i) => {
+    if (el.hidden) el.hidden = false;
+    setTf(el, `translateX(${xs[i].toFixed(1)}px)`);
+    const gapL = i > 0 ? xs[i] - xs[i - 1] : 1e9, gapR = i < n - 1 ? xs[i + 1] - xs[i] : 1e9;
+    setCls(el, "tick", Math.min(gapL, gapR) < (el._e.m ? 16 : 11));
+    setOp(el, Math.max(0.35, 1 - Math.abs(i - k) / 16).toFixed(2));
+    setCls(el, "near", near.has(i));
+    setCls(el, "named", named.has(i));
+    setCls(el, "cur", i === k);
+    put(el, "_lw", named.get(i), v => v ? el.style.setProperty("--lw", v + "px") : el.style.removeProperty("--lw"));
+  });
+
+  // 年份刻度放在跨年的两个节点之间
+  const curYear = vis[k]?._e.d.slice(0, 4);
+  const seen = [], used = new Set();
+  vis.forEach((el, i) => {
+    const y = el._e.d.slice(0, 4);
+    if (i === 0 || vis[i - 1]._e.d.slice(0, 4) !== y) {
+      const x = i === 0 ? xs[0] - 14 : (xs[i - 1] + xs[i]) / 2;
+      const t = yearTicks[y], end = x > W - 70;
+      used.add(t);
+      setOp(t, "1");
+      setTf(t, `translateX(${x.toFixed(1)}px)`);
+      setCls(t, "cur", y === curYear);
+      setCls(t, "end", end);
+      setCls(t, "under", Math.abs(x + (end ? -25 : 25) - xs[k]) < R + 30);
+      seen.push([end ? x - 50 : x, t]); // 标签实际起点
+    }
+  });
+  Object.values(yearTicks).forEach(t => { if (!used.has(t)) setOp(t, "0"); });
+  seen.forEach(([x, t], j) => setCls(t, "tight", j < seen.length - 1 && seen[j + 1][0] - x < 52));
+
+  const cx = xs[k] ?? W / 2, x0 = (xs[0] ?? cx) - 14;
+  setTf(eclipse, `translateX(${cx.toFixed(1)}px)`);
+  setTf(railLit, `translateX(${x0.toFixed(1)}px) scaleX(${(Math.max(0, cx - R - x0) / 1000).toFixed(4)})`);
+  drift.focus(M.left + cx);
+
+  // 大年份跟着焦点做轻微视差，竖直居中压在时间线上
+  const gx = (W - gw) / 2 + (cx - W / 2) * 0.35;
+  setTf(ghost, `translate(${gx.toFixed(1)}px, ${(railY - gh / 2).toFixed(1)}px)`);
+
+  // 面板跟随焦点，但不出屏
+  const left = Math.max(px, Math.min(W - px - pw, cx - pw * 0.3));
+  const bottom = railY - R - (W < 760 ? 20 : 26);
+  put(panel, "_bottom", H - bottom, v => { panel.style.bottom = v + "px"; });
+  setTf(panel, `translateX(${left.toFixed(1)}px)`);
+  put(leader, "_geo", `${bottom}/${railY - R - bottom}`, () => { leader.style.top = bottom + "px"; leader.style.height = (railY - R - bottom) + "px"; });
+  setTf(leader, `translateX(${cx.toFixed(1)}px)`);
+}
+
+/* ---------- Focus ---------- */
+const GLYPHS = "░▒▓▁▂▃▄▅";
+function decode(el, text) {
+  cancelAnimationFrame(el._raf);
+  if (reduceMotion) { el.textContent = text; return; }
+  const start = performance.now(), dur = 460;
+  let last = 0;
+  const tick = now => {
+    // 乱码每 50ms 换一次就够了，每帧都换会让大标题每帧重排
+    if (now - last < 50 && now - start < dur) { el._raf = requestAnimationFrame(tick); return; }
+    last = now;
+    const p = Math.min(1, (now - start) / dur);
+    const r = Math.floor(p * text.length);
+    let s = text.slice(0, r);
+    for (let i = r; i < text.length; i++) s += text[i] === " " ? " " : GLYPHS[Math.random() * GLYPHS.length | 0];
+    el.textContent = s;
+    if (p < 1) el._raf = requestAnimationFrame(tick);
+  };
+  el._raf = requestAnimationFrame(tick);
+  clearTimeout(el._done);
+  el._done = setTimeout(() => { cancelAnimationFrame(el._raf); el.textContent = text; }, dur + 120);
+}
+
+let renderRaf = 0;
+function schedule() {
+  if (!renderRaf) renderRaf = requestAnimationFrame(() => { renderRaf = 0; render(); });
+}
+
+const $chapter = $("#chapter"), $seq = $("#seq"), $pdate = $("#pdate"), $ptplus = $("#ptplus"), $ptitle = $("#ptitle"),
+  $pdesc = $("#pdesc"), $porg = $("#porg"), $pcat = $("#pcat"), $pgap = $("#pgap"), $prev = $("#prev"), $next = $("#next"), $live = $("#live");
+let shownEl = null;
+function render() {
+  cancelAnimationFrame(renderRaf); renderRaf = 0;
+  const el = vis[k]; if (!el) return;
+  if (shownEl === el) { layout(); return; }
+  shownEl = el;
+  const e = el._e, c = CATS[e.c];
+  const y = e.d.slice(0, 4);
+  panel.style.setProperty("--k", c.color);
+  if (ghostText.textContent !== y) {
+    ghostText.textContent = y;
+    M.gw = ghost.offsetWidth; M.gh = ghost.offsetHeight;
+    streak();
+  }
+  $chapter.innerHTML = `<b>${y}</b>${YEARS[y][0]}`;
+  $seq.textContent = `${String(k + 1).padStart(2, "0")} / ${vis.length}`;
+  $pdate.textContent = fmtDate(e.d);
+  $pdate.setAttribute("datetime", e.d);
+  const tplus = Math.round((e.time - LAUNCH_DAY) / DAY);
+  $ptplus.textContent = `T+${e.d.length === 7 ? "约 " : ""}${tplus} 天`;
+  decode($ptitle, e.t);
+  $pdesc.textContent = e.x;
+  if (!reduceMotion && $pdesc.animate) $pdesc.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 500, easing: "ease-out" });
+  $porg.textContent = e.o;
+  $pcat.textContent = c.name;
+  const prev = vis[k - 1]?._e;
+  const gap = prev ? Math.round((e.time - prev.time) / DAY) : null;
+  $pgap.textContent = e.d.length === 7 ? "日期只精确到月" : gap === null ? "编年起点" : gap === 0 ? "与上一节点同日" : `距上一节点 ${gap} 天`;
+
+  $prev.disabled = k <= 0;
+  $next.disabled = k >= vis.length - 1;
+  railHit.setAttribute("aria-valuemin", 1);
+  railHit.setAttribute("aria-valuemax", vis.length);
+  railHit.setAttribute("aria-valuenow", k + 1);
+  railHit.setAttribute("aria-valuetext", `${fmtDate(e.d)} ${e.t}`);
+  $live.textContent = `${fmtDate(e.d)}，${e.t}。${e.x}`;
+  layout();
+}
+
+function go(i) {
+  i = Math.max(0, Math.min(vis.length - 1, i));
+  if (i === k || i < 0) return;
+  const dir = Math.sign(i - k);
+  k = i;
+  spin += 40 * dir; // 背光随移动方向绕盘面转动
+  disc.style.transform = `rotate(${spin}deg)`;
+  drift(dir);
+  schedule();
+}
+
+/* ---------- Input ---------- */
+$("#prev").addEventListener("click", () => go(k - 1));
+$("#next").addEventListener("click", () => go(k + 1));
+
+document.addEventListener("keydown", e => {
+  if (e.altKey || e.ctrlKey || e.metaKey) return;
+  const map = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1, PageDown: 5, PageUp: -5 };
+  if (e.key in map) { e.preventDefault(); go(k + map[e.key]); }
+  else if (e.key === "Home") { e.preventDefault(); go(0); }
+  else if (e.key === "End") { e.preventDefault(); go(vis.length - 1); }
+});
+
+let acc = 0, lastWheel = 0, lastStep = 0;
+$("#app").addEventListener("wheel", e => {
+  if (e.ctrlKey || e.target.closest(".filters")) return;
+  e.preventDefault();
+  const now = performance.now();
+  if (now - lastWheel > 260) acc = 0;
+  lastWheel = now;
+  acc += Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY * (e.deltaMode === 1 ? 32 : 1);
+  if (Math.abs(acc) >= 50 && now - lastStep > 130) {
+    go(k + Math.sign(acc));
+    acc = 0; lastStep = now;
+  }
+}, { passive: false });
+
+// 沿时间线拖动：按未变形的比例换算
+let scrubbing = false;
+const scrub = clientX => {
+  const L = M.left + M.px + M.R * 0.8, R = M.left + M.W - M.px - M.R * 0.8;
+  const f = Math.max(0, Math.min(1, (clientX - L) / (R - L)));
+  go(Math.round(f * (vis.length - 1)));
+};
+railHit.addEventListener("pointerdown", e => { scrubbing = true; railHit.setPointerCapture(e.pointerId); scrub(e.clientX); });
+railHit.addEventListener("pointermove", e => { if (scrubbing) scrub(e.clientX); });
+railHit.addEventListener("pointerup", () => { scrubbing = false; });
+railHit.addEventListener("pointercancel", () => { scrubbing = false; });
+
+/* ---------- Filters ---------- */
+const filtersEl = $("#filters");
+const keys = Object.keys(CATS);
+const active = new Set(keys);
+const chipAll = document.createElement("button");
+chipAll.className = "chip"; chipAll.type = "button";
+chipAll.innerHTML = `全部<span class="n">${EVENTS.length}</span>`;
+chipAll.addEventListener("click", () => { keys.forEach(x => active.add(x)); applyFilter(); });
+filtersEl.appendChild(chipAll);
+const chips = {};
+Object.entries(CATS).forEach(([key, c]) => {
+  const b = document.createElement("button");
+  b.className = "chip"; b.type = "button";
+  b.style.setProperty("--k", c.color);
+  b.innerHTML = `<i></i>${c.name}<span class="n">${EVENTS.filter(e => e.c === key).length}</span>`;
+  b.addEventListener("click", () => {
+    if (active.size === keys.length) { active.clear(); active.add(key); } // 全选时点某类 = 只看这一类
+    else if (active.has(key)) active.delete(key);
+    else active.add(key);
+    if (!active.size) keys.forEach(x => active.add(x));
+    applyFilter();
+  });
+  filtersEl.appendChild(b);
+  chips[key] = b;
+});
+
+function applyFilter() {
+  chipAll.setAttribute("aria-pressed", active.size === keys.length);
+  Object.entries(chips).forEach(([key, b]) => b.setAttribute("aria-pressed", active.has(key)));
+  const curTime = vis[k]?._e.time ?? 0;
+  vis = dots.filter(el => active.has(el._e.c));
+  const next = vis.findIndex(el => el._e.time >= curTime);
+  k = next === -1 ? vis.length - 1 : next;
+  $("#hint").textContent = `滚动滚轮、按方向键，或沿时间线拖动，共 ${vis.length} 个节点`;
+  shownEl = null;
+  render();
+}
+
+let resizeT;
+addEventListener("resize", () => { clearTimeout(resizeT); resizeT = setTimeout(() => { measure(); layout(); }, 100); });
+// 字体晚到时字宽会变，重新量一次
+document.fonts?.addEventListener?.("loadingdone", () => { if (M.W) { measure(); layout(); } });
+Promise.race([document.fonts?.ready || Promise.resolve(), new Promise(r => setTimeout(r, 1200))]).then(() => {
+  measure();
+  applyFilter();
+  void document.body.offsetWidth; // 先落定首帧位置，再开启过渡
+  $("#app").classList.add("booted");
+});
+</script>
+</body>
+</html>

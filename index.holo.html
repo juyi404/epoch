@@ -1,0 +1,891 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>智能纪元编年史 · 2022—2026</title>
+<meta name="description" content="从 ChatGPT（GPT-3.5）上线开始，沿一条时间光轨穿越生成式 AI 的关键时刻。">
+<link rel="preconnect" href="https://fonts.loli.net">
+<link rel="stylesheet" href="https://fonts.loli.net/css2?family=Tektur:wdth,wght@75..100,400..900&family=Noto+Sans+SC:wght@400;500;700;900&display=swap">
+<style>
+  :root {
+    --void: #010104;
+    --panel: rgba(10, 17, 46, 0.62);
+    --line: #1F2757;
+    --ion: #E6ECFF;
+    --dust: #8790BA;
+    --holo: #6FE3FF;
+
+    --c-model: #6FE3FF;
+    --c-open: #7CF2B4;
+    --c-product: #FFB86B;
+    --c-policy: #FF7A93;
+    --c-science: #C8A2FF;
+    --c-industry: #F2E46B;
+
+    --num: "Tektur", "Bahnschrift", "DIN Alternate", sans-serif;
+    --text: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    --px: clamp(18px, 4vw, 64px);
+    --ease: cubic-bezier(.2, .8, .2, 1);
+    --cut: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    overflow: hidden;
+    background: var(--void);
+    color: var(--ion);
+    font-family: var(--text);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  button { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--holo); outline-offset: 3px; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  /* ---------- Atmosphere ---------- */
+  #stars { position: fixed; inset: 0; width: 100%; height: 100%; }
+  .nebula {
+    position: fixed; inset: 0; pointer-events: none;
+    background:
+      radial-gradient(38% 18% at 50% 76%, rgba(111, 227, 255, 0.05), transparent 70%),
+      radial-gradient(45% 35% at 80% 25%, rgba(120, 90, 200, 0.045), transparent 75%),
+      radial-gradient(120% 90% at 50% 55%, transparent 45%, rgba(0, 0, 0, 0.85) 100%);
+  }
+  .scan {
+    position: fixed; inset: 0; pointer-events: none; z-index: 5;
+    background: repeating-linear-gradient(to bottom, rgba(230, 236, 255, 0.035) 0 1px, transparent 1px 3px);
+    mix-blend-mode: overlay;
+  }
+
+  .app {
+    position: relative; z-index: 1;
+    height: 100vh; height: 100svh;
+    overflow: hidden;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    grid-template-columns: minmax(0, 1fr);
+    padding: 24px var(--px) 20px;
+  }
+
+  /* ---------- Header ---------- */
+  .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px 40px; flex-wrap: wrap; }
+  .top > div { min-width: 0; }
+  .clock {
+    margin: 0;
+    font-family: var(--num);
+    font-size: clamp(1.9rem, 3.6vw, 3.2rem);
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    letter-spacing: -0.01em;
+  }
+  .clock .tplus { color: var(--holo); font-weight: 400; margin-right: 0.12em; }
+  .clock .days { font-weight: 800; }
+  .clock .unit { font-family: var(--text); font-weight: 500; font-size: 0.34em; color: var(--dust); margin: 0 0.6em 0 0.25em; vertical-align: 0.85em; }
+  .clock .hms { font-weight: 300; color: #B8C2EE; font-size: 0.55em; }
+  h1 { margin: 10px 0 0; font-size: 1rem; font-weight: 700; letter-spacing: 0.2em; color: #C3CBF0; }
+  h1 span { font-family: var(--num); font-weight: 400; letter-spacing: 0.04em; color: var(--dust); margin-left: 0.8em; }
+
+  .filters { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; max-width: 620px; min-width: 0; }
+  .chip {
+    flex: none;
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 5px 14px 5px 12px;
+    font-size: 0.82rem; font-weight: 500; line-height: 1.5;
+    color: var(--dust);
+    background: rgba(111, 227, 255, 0.05);
+    border: 0;
+    clip-path: var(--cut);
+    cursor: pointer;
+    transition: color .15s, background .15s;
+  }
+  .chip i { width: 6px; height: 6px; transform: rotate(45deg); background: var(--k, var(--ion)); opacity: .3; }
+  .chip:hover { background: rgba(111, 227, 255, 0.1); }
+  .chip[aria-pressed="true"] { color: var(--ion); background: color-mix(in srgb, var(--k, var(--holo)) 16%, transparent); }
+  .chip[aria-pressed="true"] i { opacity: 1; box-shadow: 0 0 8px var(--k, var(--ion)); }
+  .chip .n { font-family: var(--num); font-size: 0.8em; opacity: .6; }
+
+  /* ---------- Stage ---------- */
+  .stage { position: relative; margin: 0 calc(-1 * var(--px)); }
+
+  .rings { position: absolute; left: 0; top: 0; width: 0; height: 0; pointer-events: none; transition: transform .8s var(--ease); }
+  .rings i {
+    position: absolute; left: 50%; top: 50%;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    border: 1px solid rgba(111, 227, 255, 0.07);
+  }
+  .rings i:nth-child(1) { width: 300px; height: 300px; border-color: rgba(111, 227, 255, 0.12); }
+  .rings i:nth-child(2) { width: 620px; height: 620px; border-style: dashed; }
+  .rings i:nth-child(3) { width: 1040px; height: 1040px; }
+
+  .panel {
+    position: absolute; left: 0;
+    width: min(660px, calc(100% - 2 * var(--px)));
+    padding: 22px 28px 20px;
+    background: linear-gradient(180deg, rgba(8, 12, 30, 0.72), rgba(2, 3, 10, 0.6));
+    -webkit-backdrop-filter: blur(6px);
+            backdrop-filter: blur(6px);
+    clip-path: polygon(0 0, calc(100% - 26px) 0, 100% 26px, 100% 100%, 26px 100%, 0 calc(100% - 26px));
+    transition: transform .8s var(--ease);
+  }
+  .brackets { position: absolute; left: 0; width: min(660px, calc(100% - 2 * var(--px))); pointer-events: none; transition: transform .8s var(--ease); }
+  .brackets::before, .brackets::after { content: ""; position: absolute; width: 26px; height: 26px; border: 0 solid var(--holo); }
+  .brackets::before { left: -6px; top: -6px; border-width: 2px 0 0 2px; }
+  .brackets::after { right: -6px; bottom: -6px; border-width: 0 2px 2px 0; }
+
+  .p-head { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; font-size: 0.82rem; color: var(--dust); border-bottom: 1px solid rgba(111, 227, 255, 0.14); padding-bottom: 10px; }
+  .p-head b { font-family: var(--num); font-weight: 600; color: var(--holo); margin-right: 8px; }
+  .p-head .seq { font-family: var(--num); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .p-when { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 16px; margin-top: 14px; }
+  .p-when time { font-family: var(--num); font-weight: 700; font-size: 1.55rem; line-height: 1.2; color: var(--k); font-variant-numeric: tabular-nums; text-shadow: 0 0 18px color-mix(in srgb, var(--k) 55%, transparent); }
+  .p-when span { font-family: var(--num); font-size: 0.95rem; color: var(--dust); }
+  .panel h2 {
+    margin: 6px 0 0;
+    font-size: clamp(1.8rem, 3.8vw, 3.3rem);
+    font-weight: 900;
+    line-height: 1.18;
+    letter-spacing: 0.01em;
+    text-shadow: -1.5px 0 rgba(111, 227, 255, 0.45), 1.5px 0 rgba(255, 122, 147, 0.35), 0 0 34px rgba(111, 227, 255, 0.22);
+  }
+  .panel p { margin: 12px 0 0; color: #B8C2EE; font-size: 1rem; line-height: 1.75; max-width: 36em; }
+  .panel p.in { animation: rise .45s ease-out both; }
+  .p-meta { display: flex; flex-wrap: wrap; gap: 4px 20px; margin-top: 14px; font-size: 0.85rem; color: var(--dust); }
+  .p-meta .cat { display: inline-flex; align-items: center; gap: 8px; color: var(--ion); }
+  .p-meta .cat::before { content: ""; width: 7px; height: 7px; transform: rotate(45deg); background: var(--k); box-shadow: 0 0 8px var(--k); }
+
+  /* 全息投影：从准星向上投出的光束 */
+  .beam {
+    position: absolute; left: 0; top: 0; width: 100%;
+    pointer-events: none;
+    --k: var(--holo);
+    background:
+      repeating-linear-gradient(to top, color-mix(in srgb, var(--k) 14%, transparent) 0 1px, transparent 1px 4px),
+      linear-gradient(to top, color-mix(in srgb, var(--k) 30%, transparent), color-mix(in srgb, var(--k) 4%, transparent) 90%);
+    transition: clip-path .8s var(--ease);
+  }
+
+  /* 巨大的镂空年份 */
+  .ghost {
+    position: absolute; right: var(--px);
+    margin: 0;
+    font: 900 clamp(6rem, 15vw, 14rem)/0.8 var(--num);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+    color: transparent;
+    -webkit-text-stroke: 1px rgba(111, 227, 255, 0.16);
+    background: linear-gradient(to bottom, rgba(111, 227, 255, 0.07), transparent 75%);
+    -webkit-background-clip: text; background-clip: text;
+    pointer-events: none;
+    user-select: none;
+  }
+  .ghost.l { right: auto; left: var(--px); }
+  .ghost.flip { animation: flicker .6s steps(1) both; }
+  @keyframes flicker { 0% { opacity: 0; } 20% { opacity: .8; } 30% { opacity: .2; } 45%, 100% { opacity: 1; } }
+
+  /* 面板刷新时的扫描光 */
+  .panel::after {
+    content: ""; position: absolute; left: 0; right: 0; top: 0; height: 40%;
+    background: linear-gradient(to bottom, transparent, color-mix(in srgb, var(--k) 16%, transparent) 85%, color-mix(in srgb, var(--k) 60%, transparent));
+    opacity: 0; pointer-events: none;
+  }
+  .panel.sweep::after { animation: sweep .7s ease-out; }
+  @keyframes sweep { 0% { opacity: 1; transform: translateY(-100%); } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(250%); } }
+
+  /* 视窗四角的取景框 */
+  .hud {
+    position: fixed; inset: 12px; z-index: 4; pointer-events: none;
+    --c: rgba(111, 227, 255, 0.45);
+    background:
+      linear-gradient(var(--c), var(--c)) top left / 22px 1px,
+      linear-gradient(var(--c), var(--c)) top left / 1px 22px,
+      linear-gradient(var(--c), var(--c)) top right / 22px 1px,
+      linear-gradient(var(--c), var(--c)) top right / 1px 22px,
+      linear-gradient(var(--c), var(--c)) bottom left / 22px 1px,
+      linear-gradient(var(--c), var(--c)) bottom left / 1px 22px,
+      linear-gradient(var(--c), var(--c)) bottom right / 22px 1px,
+      linear-gradient(var(--c), var(--c)) bottom right / 1px 22px;
+    background-repeat: no-repeat;
+  }
+  #floor { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  #floor.on { animation: rise 1.4s ease-out .4s both; }
+
+  /* ---------- The rail: one line ---------- */
+  .rail { position: absolute; left: 0; right: 0; height: 0; }
+  .rail-line, .rail-lit { position: absolute; left: var(--px); height: 1px; top: 0; }
+  .rail-line { right: var(--px); background: rgba(230, 236, 255, 0.22); }
+  .rail-lit {
+    width: 0;
+    background: linear-gradient(to right, rgba(111, 227, 255, 0), var(--holo));
+    box-shadow: 0 0 10px var(--holo), 0 0 2px var(--holo);
+    height: 2px; top: -0.5px;
+    transition: width .8s var(--ease);
+  }
+  .rail-hit { position: absolute; left: 0; right: 0; top: -44px; height: 88px; cursor: ew-resize; touch-action: none; }
+  .rail-hit:focus-visible { outline: none; }
+  .rail-hit:focus-visible ~ .reticle svg { filter: drop-shadow(0 0 6px var(--holo)); }
+
+  .dot {
+    position: absolute; left: 0; top: 0;
+    width: 0; height: 0;
+    transition: transform .8s var(--ease), opacity .8s;
+    cursor: pointer;
+  }
+  .dot:hover { opacity: 1 !important; }
+  .dot[hidden] { display: none; }
+  .dot::before {
+    content: ""; position: absolute;
+    width: 6px; height: 6px; left: -3px; top: -3px;
+    background: var(--k);
+    transform: rotate(45deg);
+    box-shadow: 0 0 6px var(--k);
+    transition: transform .3s;
+  }
+  .dot.major::before { width: 9px; height: 9px; left: -4.5px; top: -4.5px; }
+  .dot::after { content: ""; position: absolute; left: -9px; top: -16px; width: 18px; height: 32px; } /* hit area */
+  .dot:hover::before { transform: rotate(45deg) scale(1.6); }
+  .dot .lbl {
+    position: absolute; top: 14px; left: 0;
+    transform: translateX(-50%);
+    font: 500 11px/1 var(--num);
+    color: var(--dust);
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity .3s;
+    pointer-events: none;
+  }
+  .dot.near .lbl { opacity: 1; }
+  .dot .tip {
+    position: absolute; bottom: 18px; left: 0;
+    transform: translateX(-50%);
+    padding: 4px 10px;
+    font-size: 12px; line-height: 1.5;
+    white-space: nowrap;
+    background: rgba(10, 17, 46, 0.92);
+    border-left: 2px solid var(--k);
+    opacity: 0; pointer-events: none;
+    transition: opacity .15s;
+  }
+  .dot:hover .tip { opacity: 1; }
+  .dot.cur .tip, .dot.cur .lbl { display: none; }
+
+  .yt { position: absolute; left: 0; top: 0; transition: transform .8s var(--ease), opacity .3s; pointer-events: none; }
+  .yt::before { content: ""; position: absolute; left: 0; top: -9px; width: 1px; height: 18px; background: rgba(230, 236, 255, 0.35); }
+  .yt::after { content: ""; position: absolute; left: 0; top: 9px; width: 1px; height: 30px; background: linear-gradient(rgba(230, 236, 255, 0.2), transparent); }
+  .yt span { position: absolute; left: 8px; top: 34px; font: 600 15px/1 var(--num); color: var(--dust); letter-spacing: 0.02em; transition: color .3s; }
+  .yt.cur span { color: var(--ion); }
+  .yt.end span { left: auto; right: 8px; }
+  .yt.tight span { opacity: 0; }
+
+  .reticle { position: absolute; left: 0; top: 0; width: 0; height: 0; pointer-events: none; transition: transform .8s var(--ease); }
+  .reticle svg { position: absolute; left: -32px; top: -32px; width: 64px; height: 64px; overflow: visible; transition: transform .8s var(--ease); }
+  .reticle .core { fill: var(--k, var(--holo)); filter: drop-shadow(0 0 8px var(--k, var(--holo))); }
+
+  /* ---------- Controls ---------- */
+  .controls { display: flex; justify-content: space-between; align-items: center; gap: 12px 24px; flex-wrap: wrap; }
+  .step { display: flex; gap: 8px; }
+  .step button {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 18px;
+    font-size: 0.9rem; font-weight: 500;
+    background: rgba(111, 227, 255, 0.08);
+    border: 0;
+    clip-path: var(--cut);
+    cursor: pointer;
+    transition: background .15s;
+  }
+  .step button:hover { background: rgba(111, 227, 255, 0.18); }
+  .step button:disabled { opacity: .3; cursor: default; background: rgba(111, 227, 255, 0.05); }
+  .step svg { width: 14px; height: 14px; stroke: var(--holo); }
+  .hint { margin: 0; font-size: 0.82rem; color: var(--dust); }
+
+  .app:not(.booted) * { transition: none !important; }
+
+  /* ---------- Load: rail draws as a light trail ---------- */
+  .booted .rail { animation: draw 1.6s var(--ease) .3s both; }
+  .booted .panel, .booted .brackets, .booted .beam, .booted .ghost { animation: rise .9s var(--ease) 1.1s both; }
+  @keyframes draw { from { clip-path: inset(-60px 100% -60px 0); } to { clip-path: inset(-60px 0 -60px 0); } }
+  @keyframes rise { from { opacity: 0; } to { opacity: 1; } }
+
+  @media (max-width: 760px) {
+    .app { padding-top: 18px; }
+    .filters { flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start; max-width: none; width: calc(100% + 2 * var(--px)); margin: 0 calc(-1 * var(--px)); padding: 0 var(--px); scrollbar-width: none; }
+    .filters::-webkit-scrollbar { display: none; }
+    .panel { padding: 16px 18px 16px; }
+    .panel p { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; font-size: 0.92rem; }
+    .hint, .ghost { display: none; }
+    .step { width: 100%; }
+    .step button { flex: 1; justify-content: center; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+</head>
+<body>
+<canvas id="stars" aria-hidden="true"></canvas>
+<canvas id="floor" aria-hidden="true"></canvas>
+<div class="nebula" aria-hidden="true"></div>
+<div class="scan" aria-hidden="true"></div>
+<div class="hud" aria-hidden="true"></div>
+
+<div class="app" id="app">
+  <header class="top">
+    <div>
+      <p class="clock" aria-label="距 ChatGPT 上线的时间">
+        <span class="tplus">T+</span><span class="days" id="days">0</span><span class="unit">天</span><span class="hms" id="hms">00:00:00</span>
+      </p>
+      <h1>智能纪元编年史<span>2022.11.30 — 今天</span></h1>
+    </div>
+    <div class="filters" id="filters" role="group" aria-label="按类别筛选"></div>
+  </header>
+
+  <section class="stage" id="stage">
+    <div class="rings" id="rings" aria-hidden="true"><i></i><i></i><i></i></div>
+    <p class="ghost" id="ghost" aria-hidden="true"></p>
+    <div class="beam" id="beam" aria-hidden="true"></div>
+    <article class="panel" id="panel" style="--k: var(--c-model)">
+      <div class="p-head"><span id="chapter"></span><span class="seq" id="seq"></span></div>
+      <div class="p-when"><time id="pdate"></time><span id="ptplus"></span></div>
+      <h2 id="ptitle"></h2>
+      <p id="pdesc"></p>
+      <div class="p-meta"><span id="porg"></span><span class="cat" id="pcat"></span><span id="pgap"></span></div>
+    </article>
+    <div class="brackets" id="brackets" aria-hidden="true"></div>
+    <div class="rail" id="rail">
+      <div class="rail-line"></div>
+      <div class="rail-lit" id="railLit"></div>
+      <div class="rail-hit" id="railHit" tabindex="0" role="slider" aria-label="时间轴"></div>
+      <div class="reticle" id="reticle" aria-hidden="true">
+        <svg viewBox="-32 -32 64 64">
+          <circle r="30" fill="none" stroke="rgba(111,227,255,.35)" stroke-width="1" stroke-dasharray="3 5"/>
+          <circle r="18" fill="none" stroke="#6FE3FF" stroke-width="1.5" stroke-dasharray="20 8.27"/>
+          <path d="M0-30V-22M0 22V30M-30 0H-22M22 0H30" stroke="#6FE3FF" stroke-width="1.5"/>
+          <rect class="core" x="-5" y="-5" width="10" height="10" transform="rotate(45)"/>
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <footer class="controls">
+    <div class="step">
+      <button type="button" id="prev"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>上一个</button>
+      <button type="button" id="next">下一个<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button>
+    </div>
+    <p class="hint" id="hint">滚动滚轮、按方向键，或沿光轨拖动来穿越时间</p>
+  </footer>
+  <p class="sr" id="live" aria-live="polite"></p>
+</div>
+
+<script>
+const CATS = {
+  model:    { name: "模型发布",   color: "var(--c-model)" },
+  open:     { name: "开源",       color: "var(--c-open)" },
+  product:  { name: "产品与智能体", color: "var(--c-product)" },
+  policy:   { name: "治理与安全", color: "var(--c-policy)" },
+  science:  { name: "科学",       color: "var(--c-science)" },
+  industry: { name: "产业与资本", color: "var(--c-industry)" },
+};
+
+const YEARS = {
+  2022: ["一个聊天框", "发布时它只被当作一次研究预览。五天后，用户过了一百万。"],
+  2023: ["所有人都在追赶 GPT-4", "巨头入场，中国开启百模大战，开源权重流出，关于风险的公开信第一次登上头条。"],
+  2024: ["能看、能听，也开始思考", "视频生成、原生多模态、推理模型相继出现，AI 拿下两项诺贝尔奖。"],
+  2025: ["开源冲击与智能体之年", "DeepSeek 让低成本训练成为共识，模型从回答问题转向替人完成任务。"],
+  2026: ["前沿加速", "旗舰模型的迭代周期缩短到以周计，访问受限的最强模型开始出现。"],
+};
+
+// d: YYYY-MM-DD 或 YYYY-MM(仅到月)
+const EVENTS = [
+  { d: "2022-11-30", c: "product", o: "OpenAI", m: 1, t: "ChatGPT 上线", x: "以 GPT-3.5 系列模型为底座的对话界面作为研究预览免费开放，五天内用户突破一百万。一个聊天框，成了新纪元的起点。" },
+
+  { d: "2023-01", c: "industry", o: "OpenAI", t: "ChatGPT 月活用户破亿", x: "上线约两个月即达成，是当时增长最快的消费级应用。" },
+  { d: "2023-01-23", c: "industry", o: "微软", t: "微软追加投资 OpenAI", x: "宣布多年期、数十亿美元规模的扩大合作，据报道约 100 亿美元。" },
+  { d: "2023-02-07", c: "product", o: "微软", t: "新必应接入 GPT", x: "对话模型进入搜索引擎，沉寂多年的搜索之争重新开打。" },
+  { d: "2023-02-24", c: "open", o: "Meta", t: "LLaMA 发布", x: "面向研究者的模型权重很快在网上流出，开源大模型生态由此被点燃。" },
+  { d: "2023-03-14", c: "model", o: "OpenAI", m: 1, t: "GPT-4", x: "支持图像输入，在模拟律师资格考试中进入考生前 10%。同一天，Anthropic 发布第一代 Claude。" },
+  { d: "2023-03-16", c: "product", o: "百度", t: "文心一言发布", x: "中国第一个大厂对话大模型亮相，百模大战开场。" },
+  { d: "2023-03-21", c: "product", o: "Google", t: "Bard 开放测试", x: "谷歌仓促应战，对话产品在美国和英国开放候补。" },
+  { d: "2023-03-29", c: "policy", o: "未来生命研究所", t: "暂停巨型 AI 实验公开信", x: "上千名研究者与企业家联署，呼吁至少暂停六个月训练比 GPT-4 更强的系统。" },
+  { d: "2023-05-01", c: "policy", o: "Geoffrey Hinton", t: "Hinton 离开谷歌", x: "深度学习先驱表示，离开是为了能更自由地谈论 AI 的风险。" },
+  { d: "2023-05-30", c: "policy", o: "AI 安全中心", t: "一句话的灭绝风险声明", x: "数百位学者与实验室负责人签署：减轻 AI 带来的灭绝风险，应与流行病和核战争一样成为全球优先事项。同日，英伟达市值首次突破一万亿美元。" },
+  { d: "2023-07-18", c: "open", o: "Meta", t: "Llama 2 允许商用", x: "开源权重首次以宽松条款面向企业，成为无数衍生模型的底座。" },
+  { d: "2023-08-15", c: "policy", o: "中国", t: "《生成式人工智能服务管理暂行办法》施行", x: "全球较早专门针对生成式 AI 服务的监管规定之一，多家国产大模型随后获准面向公众上线。" },
+  { d: "2023-09-25", c: "product", o: "OpenAI", t: "ChatGPT 能看、能听、能说", x: "加入图像理解与语音对话，聊天框第一次有了眼睛和声音。" },
+  { d: "2023-11-01", c: "policy", o: "英国", t: "布莱切利 AI 安全峰会", x: "28 个国家和欧盟签署《布莱切利宣言》，前沿 AI 风险首次成为政府间议题。" },
+  { d: "2023-11-06", c: "product", o: "OpenAI", t: "首届开发者大会", x: "发布 GPT-4 Turbo 与可自定义的 GPTs，提出人人都能造自己的助手。" },
+  { d: "2023-11-17", c: "industry", o: "OpenAI", m: 1, t: "OpenAI 董事会风波", x: "Sam Altman 被董事会突然解雇，绝大多数员工联名要求其回归。五天后 Altman 复职，董事会改组。" },
+  { d: "2023-12-06", c: "model", o: "Google", t: "Gemini 1.0", x: "谷歌与 DeepMind 合并后的首个旗舰，从一开始就按原生多模态训练。" },
+  { d: "2023-12-11", c: "open", o: "Mistral", t: "Mixtral 8x7B", x: "开源的混合专家模型以小博大，让 MoE 架构走进主流。" },
+
+  { d: "2024-02-15", c: "model", o: "OpenAI", m: 1, t: "Sora 预览", x: "一分钟长度的高保真视频从文字生成，世界模拟器之争开始。同日，Gemini 1.5 带来百万 token 的上下文窗口。" },
+  { d: "2024-03-04", c: "model", o: "Anthropic", t: "Claude 3 家族", x: "Opus、Sonnet、Haiku 三档模型发布，Opus 在多项评测中与 GPT-4 并驾齐驱。" },
+  { d: "2024-03-13", c: "policy", o: "欧盟", t: "欧洲议会通过《人工智能法》", x: "全球第一部全面的 AI 法律，按风险等级分层监管。" },
+  { d: "2024-04-18", c: "open", o: "Meta", t: "Llama 3", x: "开源模型在对话质量上与闭源的差距进一步缩小。" },
+  { d: "2024-05-13", c: "model", o: "OpenAI", m: 1, t: "GPT-4o", x: "文字、语音、图像在同一个模型里端到端处理，实时语音对话的延迟接近人类。" },
+  { d: "2024-06-06", c: "model", o: "快手", t: "可灵视频模型", x: "中国团队的视频生成模型开放使用，生成视频的竞争变成全球赛。" },
+  { d: "2024-06-10", c: "product", o: "Apple", t: "Apple Intelligence", x: "苹果把生成式 AI 写进系统，并在 Siri 中接入 ChatGPT。" },
+  { d: "2024-06-20", c: "model", o: "Anthropic", t: "Claude 3.5 Sonnet", x: "中档价格给出超越上一代旗舰的能力，尤其擅长写代码。" },
+  { d: "2024-07-23", c: "open", o: "Meta", t: "Llama 3.1 405B", x: "第一个达到前沿水平的开源权重模型。" },
+  { d: "2024-08-01", c: "policy", o: "欧盟", t: "《人工智能法》生效", x: "相关条款在此后数年内分阶段适用。" },
+  { d: "2024-09-12", c: "model", o: "OpenAI", m: 1, t: "o1：会思考的模型", x: "模型先在内部推理再作答，数学与编程能力跃升。测试时计算成为规模定律之外新的扩展维度。" },
+  { d: "2024-10-08", c: "science", o: "诺贝尔奖", m: 1, t: "AI 拿下两项诺贝尔奖", x: "物理学奖授予 Hopfield 与 Hinton，表彰神经网络的奠基工作。次日化学奖授予 Hassabis、Jumper（AlphaFold）与 Baker。" },
+  { d: "2024-10-22", c: "product", o: "Anthropic", t: "Claude 学会操作电脑", x: "Computer Use 让模型看屏幕、移动鼠标、敲键盘，像人一样使用软件。" },
+  { d: "2024-11-25", c: "open", o: "Anthropic", t: "模型上下文协议 MCP", x: "开源的工具连接标准，后来被各大厂商采用，成为智能体接入外部世界的通用接口。" },
+  { d: "2024-12-09", c: "product", o: "OpenAI", t: "Sora 正式开放", x: "视频生成从演示变成人人可用的产品。" },
+  { d: "2024-12-11", c: "model", o: "Google", t: "Gemini 2.0", x: "谷歌宣布进入智能体时代，模型原生支持工具调用与图像、语音输出。" },
+  { d: "2024-12-20", c: "model", o: "OpenAI", t: "o3 公布", x: "在高算力配置下于 ARC-AGI-1 测试取得 87.5%，推理模型的上限被迅速推高。" },
+  { d: "2024-12-26", c: "open", o: "DeepSeek", t: "DeepSeek-V3", x: "开源 MoE 模型性能比肩顶级闭源，官方披露的最终训练成本约 560 万美元。" },
+
+  { d: "2025-01-20", c: "open", o: "DeepSeek", m: 1, t: "DeepSeek-R1", x: "开源推理模型比肩 o1，并公开了强化学习训练方法。一周后，英伟达单日市值蒸发近六千亿美元，创美股纪录。" },
+  { d: "2025-01-21", c: "industry", o: "OpenAI 等", t: "星际之门计划", x: "OpenAI、软银、甲骨文等宣布在美国投入最高 5000 亿美元建设 AI 算力。" },
+  { d: "2025-01-23", c: "product", o: "OpenAI", t: "Operator", x: "能自己打开浏览器、点击网页、完成下单等任务的智能体。" },
+  { d: "2025-02-02", c: "product", o: "OpenAI", t: "Deep Research", x: "花数十分钟自主检索、阅读上百个网页，写出带引用的研究报告。" },
+  { d: "2025-02-24", c: "product", o: "Anthropic", t: "Claude 3.7 Sonnet 与 Claude Code", x: "混合推理模型发布，同时推出在终端里直接读写代码库的编程智能体。" },
+  { d: "2025-02-27", c: "model", o: "OpenAI", t: "GPT-4.5", x: "规模最大的非推理模型，被视作预训练扩展路线的一次总结。" },
+  { d: "2025-03-06", c: "product", o: "Manus", t: "Manus 通用智能体", x: "中国团队发布的通用智能体演示在全球刷屏，邀请码一码难求。" },
+  { d: "2025-03-25", c: "product", o: "OpenAI / Google", t: "原生生图与 Gemini 2.5 Pro", x: "GPT-4o 原生图像生成掀起吉卜力风格热潮；同一天，谷歌发布登顶多个榜单的 Gemini 2.5 Pro。" },
+  { d: "2025-04-05", c: "open", o: "Meta", t: "Llama 4", x: "首批 MoE 架构的 Llama 发布，Scout 版本宣称支持千万 token 上下文。" },
+  { d: "2025-04-16", c: "model", o: "OpenAI", t: "o3 与 o4-mini", x: "推理模型第一次能在思考过程中自主调用搜索、代码执行和看图。" },
+  { d: "2025-04-29", c: "open", o: "阿里巴巴", t: "Qwen3", x: "通义千问开源全尺寸混合推理模型家族，成为全球衍生模型最多的开源系列之一。" },
+  { d: "2025-05-20", c: "model", o: "Google", t: "Veo 3", x: "视频生成第一次同步生成对白、音效与环境声。" },
+  { d: "2025-05-22", c: "model", o: "Anthropic", t: "Claude 4", x: "Opus 4 与 Sonnet 4 发布，可以连续数小时自主完成编程任务。" },
+  { d: "2025-07-09", c: "model", o: "xAI", t: "Grok 4", x: "在 ARC-AGI-2、Humanity's Last Exam 等高难度评测上刷新当时纪录。" },
+  { d: "2025-07-11", c: "open", o: "月之暗面", t: "Kimi K2", x: "万亿参数的开源 MoE 模型，主打智能体与工具调用能力。" },
+  { d: "2025-07-17", c: "product", o: "OpenAI", t: "ChatGPT Agent", x: "把网页操作、深度研究与代码执行合成一个能自己干活的智能体。" },
+  { d: "2025-07-19", c: "science", o: "OpenAI / DeepMind", m: 1, t: "IMO 金牌线", x: "两家实验室的模型在 2025 年国际数学奥林匹克中以自然语言写出证明，成绩达到金牌分数线。" },
+  { d: "2025-08-05", c: "open", o: "OpenAI", t: "gpt-oss", x: "OpenAI 自 GPT-2 之后首次发布开放权重的语言模型。同日，DeepMind 公布可实时交互的世界模型 Genie 3。" },
+  { d: "2025-08-07", c: "model", o: "OpenAI", m: 1, t: "GPT-5", x: "统一的快慢思考系统，自动判断何时深入推理，并成为 ChatGPT 所有用户的默认模型。" },
+  { d: "2025-09-29", c: "model", o: "Anthropic", t: "Claude Sonnet 4.5", x: "在真实软件工程评测中领先，可连续自主工作三十小时以上。" },
+  { d: "2025-09-30", c: "product", o: "OpenAI", t: "Sora 2 与 Sora App", x: "带声音的视频生成加上一个短视频社交应用，AI 视频开始有了自己的平台。" },
+  { d: "2025-11-18", c: "model", o: "Google", t: "Gemini 3", x: "连同智能体开发环境 Antigravity 与新版 Nano Banana 图像模型一起发布。" },
+  { d: "2025-11-24", c: "model", o: "Anthropic", t: "Claude Opus 4.5", x: "旗舰模型大幅降价，编程、智能体与电脑操作能力全面提升。" },
+  { d: "2025-12", c: "model", o: "OpenAI", t: "GPT-5.2", x: "距 5.1 仅隔数周，前沿模型的迭代节奏开始以周计。" },
+
+  { d: "2026-02", c: "model", o: "Anthropic / Google", t: "Claude Opus 4.6 与 Gemini 3.1 Pro", x: "两大旗舰在同月更新，编程与长任务能力继续拉升。" },
+  { d: "2026-03", c: "model", o: "OpenAI", t: "GPT-5.4", x: "OpenAI 在春季持续推出小版本迭代，mini 与 nano 版随后跟进。" },
+  { d: "2026-04", c: "model", o: "OpenAI", t: "GPT-5.5", x: "据报道代号 Spud，更高效，编程能力更强。" },
+  { d: "2026-04", c: "open", o: "DeepSeek", t: "DeepSeek V4", x: "Pro 与 Flash 两个版本以 MIT 许可开源，同月 Qwen 3.6、Kimi K2.6 相继发布。" },
+  { d: "2026-05", c: "model", o: "Anthropic", t: "Claude Opus 4.8", x: "Opus 4.x 系列的最后一版，距 4.7 仅约六周。" },
+  { d: "2026-06", c: "model", o: "Anthropic", m: 1, t: "Claude Fable 5 与受限的 Mythos 5", x: "Claude 5 家族登场。Fable 向公众开放，能力更强的 Mythos 只向受限对象提供，最强模型不再默认公开。" },
+  { d: "2026-07", c: "model", o: "Anthropic", t: "Claude Sonnet 5 与 Opus 5", x: "Sonnet 5 在月初发布；月底的 Opus 5 以约一半价格接近 Fable 的水平，支持百万 token 上下文。" },
+  { d: "2026-07", c: "open", o: "月之暗面", t: "Kimi K3", x: "开放权重发布，中国开源模型继续紧跟前沿。" },
+  { d: "2026-09", c: "model", o: "Anthropic", t: "Claude Fable 5.1", x: "Fable 与 Mythos 同步升级到 5.1。" },
+  { d: "2026-09", c: "model", o: "OpenAI", m: 1, t: "GPT-6", x: "新一代 GPT 系列分阶段推出，先向部分机构开放。编年记录暂止于此。" },
+];
+
+const LAUNCH = Date.UTC(2022, 10, 30, 18, 0, 0); // 2022-11-30 10:00 PST
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const $ = s => document.querySelector(s);
+const DAY = 86400000;
+
+/* ---------- Mission clock ---------- */
+(() => {
+  const daysEl = $("#days"), hmsEl = $("#hms");
+  const pad = n => String(n).padStart(2, "0");
+  const render = ms => {
+    const s = Math.floor(ms / 1000);
+    daysEl.textContent = Math.floor(s / 86400);
+    hmsEl.textContent = `${pad(Math.floor(s % 86400 / 3600))}:${pad(Math.floor(s % 3600 / 60))}:${pad(s % 60)}`;
+  };
+  const t0 = performance.now(), dur = reduceMotion ? 0 : 2200;
+  const frame = now => {
+    const k = dur ? Math.min(1, (now - t0) / dur) : 1;
+    render((Date.now() - LAUNCH) * (1 - Math.pow(1 - k, 4)));
+    if (k < 1) requestAnimationFrame(frame);
+    else setInterval(() => render(Date.now() - LAUNCH), 1000);
+  };
+  requestAnimationFrame(frame);
+})();
+
+/* ---------- Starfield: warp on load, a pulse on every jump ---------- */
+const warp = (() => {
+  const cv = $("#stars"), ctx = cv.getContext("2d");
+  const tints = ["#E6ECFF", "#E6ECFF", "#E6ECFF", "#E6ECFF", "#6FE3FF", "#C8A2FF", "#FFB86B"];
+  let W, H, running = true, boost = 0;
+  const stars = [];
+  const N = innerWidth < 760 ? 240 : 520;
+  const resize = () => {
+    const dpr = Math.min(devicePixelRatio || 1, 2);
+    W = innerWidth; H = innerHeight;
+    cv.width = W * dpr; cv.height = H * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.fillStyle = "#010104"; ctx.fillRect(0, 0, W, H);
+  };
+  const spawn = (s, z) => {
+    s.x = (Math.random() - 0.5) * 2; s.y = (Math.random() - 0.5) * 2;
+    s.z = z ?? Math.random() * 0.9 + 0.1;
+    s.c = tints[Math.floor(Math.random() * tints.length)];
+    return s;
+  };
+  resize();
+  for (let i = 0; i < N; i++) stars.push(spawn({}));
+  addEventListener("resize", resize);
+  const t0 = performance.now();
+  const draw = now => {
+    if (!running) return;
+    const t = (now - t0) / 1000;
+    const v = reduceMotion ? 0 : 0.0006 + 0.05 * Math.exp(-t * 1.6) + boost;
+    boost *= 0.93;
+    const cx = W * 0.5, cy = H * 0.55, f = Math.max(W, H) * 0.5;
+    ctx.fillStyle = "rgba(1,1,4,0.5)";
+    ctx.fillRect(0, 0, W, H);
+    for (const s of stars) {
+      const pz = s.z;
+      s.z -= v;
+      if (s.z <= 0.02) { spawn(s, 1); continue; }
+      if (s.z > 1) { spawn(s, 0.05 + Math.random() * 0.25); continue; }
+      const sx = cx + s.x / s.z * f, sy = cy + s.y / s.z * f;
+      if (v > 0 && (sx < -50 || sx > W + 50 || sy < -50 || sy > H + 50)) { spawn(s, 1); continue; }
+      ctx.strokeStyle = s.c;
+      ctx.globalAlpha = Math.min(1, 0.25 + (1 - s.z) * 1.1) * 0.8;
+      ctx.lineWidth = Math.max(1, (1 - s.z) * 2.4);
+      ctx.beginPath(); ctx.moveTo(cx + s.x / pz * f, cy + s.y / pz * f); ctx.lineTo(sx + 0.1, sy + 0.1); ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+    requestAnimationFrame(draw);
+  };
+  requestAnimationFrame(draw);
+  document.addEventListener("visibilitychange", () => {
+    running = !document.hidden;
+    if (running) requestAnimationFrame(draw);
+  });
+  return dir => { if (!reduceMotion) boost = Math.max(-0.035, Math.min(0.035, boost + 0.014 * dir)); };
+})();
+
+/* ---------- Floor: a perspective grid receding to the rail's horizon ---------- */
+const floor = (() => {
+  const cv = $("#floor"), ctx = cv.getContext("2d");
+  let W, H, y0 = 0, tx = 0, tz = 0, x = 0, z = 0, raf = 0;
+  const resize = () => {
+    const dpr = Math.min(devicePixelRatio || 1, 2);
+    W = innerWidth; H = innerHeight;
+    cv.width = W * dpr; cv.height = H * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  };
+  const draw = () => {
+    ctx.clearRect(0, 0, W, H);
+    const h = H - y0; if (h <= 0) return;
+    const vx = W / 2, g = W < 760 ? 70 : 110, dz = 0.45, zFar = 40;
+    // 纵线：世界坐标里等距，汇聚到视平线中点
+    const n = Math.ceil(W / g * 3);
+    const ox = ((x % g) + g) % g;
+    for (let i = -n; i <= n; i++) {
+      const X = i * g + ox - g / 2;
+      const a = Math.max(0, 0.16 - Math.abs(X) / (W * 3.2));
+      if (a <= 0.004) continue;
+      const grad = ctx.createLinearGradient(0, y0, 0, H);
+      grad.addColorStop(0, "rgba(111,227,255,0)");
+      grad.addColorStop(0.35, `rgba(111,227,255,${a})`);
+      grad.addColorStop(1, `rgba(111,227,255,${a * 0.6})`);
+      ctx.strokeStyle = grad;
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(vx + X / zFar, y0 + h / zFar); ctx.lineTo(vx + X / 0.8, y0 + h / 0.8); ctx.stroke();
+    }
+    // 横线：越远越密、越暗
+    const oz = ((z % dz) + dz) % dz;
+    for (let j = 0; j < zFar / dz; j++) {
+      const Z = 0.8 + j * dz + (dz - oz);
+      const y = y0 + h / Z;
+      if (y > H) continue;
+      const a = 0.17 / Math.pow(Z, 0.9);
+      if (a < 0.008) break;
+      ctx.fillStyle = `rgba(111,227,255,${a})`;
+      ctx.fillRect(0, Math.round(y), W, 1);
+    }
+  };
+  const loop = () => {
+    x += (tx - x) * 0.08; z += (tz - z) * 0.08;
+    draw();
+    raf = Math.abs(tx - x) > 0.3 || Math.abs(tz - z) > 0.002 ? requestAnimationFrame(loop) : 0;
+  };
+  resize();
+  addEventListener("resize", () => { resize(); draw(); });
+  return {
+    set(horizon, i) {
+      y0 = horizon; tx = -i * 38; tz = i * 0.3;
+      if (reduceMotion) { x = tx; z = tz; draw(); return; }
+      if (!raf) raf = requestAnimationFrame(loop);
+    },
+  };
+})();
+
+/* ---------- Events ---------- */
+const utc = d => Date.UTC(+d.slice(0, 4), +d.slice(5, 7) - 1, d.length === 10 ? +d.slice(8) : 15);
+const LAUNCH_DAY = Date.UTC(2022, 10, 30);
+const fmtDate = d => d.length === 10 ? d.replace(/-/g, ".") : `${d.slice(0, 4)}.${d.slice(5, 7)}`;
+
+const all = EVENTS
+  .map((e, i) => ({ e, i, t: utc(e.d) }))
+  .sort((a, b) => a.t - b.t || a.i - b.i)
+  .map(({ e, t }) => ({ ...e, time: t }));
+
+const stage = $("#stage"), rail = $("#rail"), railLit = $("#railLit"), railHit = $("#railHit");
+const reticle = $("#reticle"), reticleSvg = reticle.querySelector("svg");
+const panel = $("#panel"), brackets = $("#brackets"), beam = $("#beam"), ghost = $("#ghost"), rings = $("#rings");
+
+const dots = all.map(e => {
+  const el = document.createElement("div");
+  el.className = "dot" + (e.m ? " major" : "");
+  el.style.setProperty("--k", CATS[e.c].color);
+  el.innerHTML = `<span class="lbl">${fmtDate(e.d).slice(2)}</span><span class="tip">${fmtDate(e.d)}　${e.t}</span>`;
+  el.addEventListener("click", () => go(vis.indexOf(el)));
+  el._e = e;
+  rail.insertBefore(el, reticle);
+  return el;
+});
+
+const yearTicks = {};
+Object.keys(YEARS).forEach(y => {
+  const el = document.createElement("div");
+  el.className = "yt";
+  el.innerHTML = `<span>${y}</span>`;
+  rail.insertBefore(el, dots[0]);
+  yearTicks[y] = el;
+});
+
+let vis = dots.slice(), k = 0, spin = 0;
+
+const padX = () => parseFloat(getComputedStyle($("#app")).paddingLeft) || 40;
+
+/* 焦点附近放大、远处压缩：线性与鱼眼混合，整段历史始终落在一条线上 */
+function makeX() {
+  const W = stage.clientWidth;
+  const px = padX();
+  const L = px + 8, R = W - px - 8;
+  const n = vis.length;
+  const f = n > 1 ? k / (n - 1) : 0.5;
+  const d = W < 760 ? 9 : 12, a = W < 760 ? 0.22 : 0.3;
+  const g = t => (d + 1) * t / (d * t + 1);
+  const fish = u => {
+    if (u < f) return f - g((f - u) / f) * f;
+    if (u > f) return f + g((u - f) / (1 - f)) * (1 - f);
+    return f;
+  };
+  return u => L + (a * u + (1 - a) * fish(u)) * (R - L);
+}
+
+function layout() {
+  const H = stage.clientHeight, W = stage.clientWidth;
+  const railY = Math.round(H * (W < 760 ? 0.8 : 0.76));
+  rail.style.top = railY + "px";
+
+  const n = vis.length, X = makeX();
+  const u = i => n > 1 ? i / (n - 1) : 0.5;
+  const xs = vis.map((_, i) => X(u(i)));
+
+  dots.forEach(el => { el.hidden = true; el.classList.remove("near", "cur"); });
+  vis.forEach((el, i) => {
+    el.hidden = false;
+    el.style.transform = `translateX(${xs[i]}px)`;
+    const gapL = i > 0 ? xs[i] - xs[i - 1] : 1e9, gapR = i < n - 1 ? xs[i + 1] - xs[i] : 1e9;
+    el.classList.toggle("near", Math.abs(i - k) <= 3 && Math.min(gapL, gapR) > 58);
+    el.style.opacity = Math.max(0.35, 1 - Math.abs(i - k) / 14).toFixed(2);
+  });
+  vis[k]?.classList.add("cur");
+
+  // 年份刻度放在跨年的两个节点之间
+  const curYear = vis[k]?._e.d.slice(0, 4);
+  const seen = [];
+  Object.values(yearTicks).forEach(el => { el.style.opacity = 0; });
+  vis.forEach((el, i) => {
+    const y = el._e.d.slice(0, 4);
+    if (i === 0 || vis[i - 1]._e.d.slice(0, 4) !== y) {
+      const x = i === 0 ? xs[0] - 14 : (xs[i - 1] + xs[i]) / 2;
+      const t = yearTicks[y];
+      t.style.opacity = 1;
+      t.style.transform = `translateX(${x}px)`;
+      t.classList.toggle("cur", y === curYear);
+      t.classList.toggle("end", x > W - 70);
+      seen.push([t, x]);
+    }
+  });
+  const at = (t, x) => t.classList.contains("end") ? x - 50 : x; // 标签实际起点
+  seen.forEach(([t, x], j) => t.classList.toggle("tight", j < seen.length - 1 && at(...seen[j + 1]) - at(t, x) < 52));
+
+  const cx = xs[k] ?? W / 2;
+  reticle.style.transform = `translateX(${cx}px)`;
+  railLit.style.width = Math.max(0, cx - (xs[0] ?? cx) + 14) + "px";
+  railLit.style.left = ((xs[0] ?? cx) - 14) + "px";
+  rings.style.transform = `translate(${cx}px, ${railY}px)`;
+
+  // 面板跟随焦点，但不出屏
+  const pw = panel.offsetWidth;
+  const px = padX();
+  const left = Math.max(px, Math.min(W - px - pw, cx - pw * 0.3));
+  const bottom = railY - 64;
+  panel.style.top = brackets.style.top = "auto";
+  panel.style.bottom = brackets.style.bottom = (H - bottom) + "px";
+  brackets.style.height = panel.offsetHeight + "px";
+  panel.style.transform = brackets.style.transform = `translateX(${left}px)`;
+  beam.style.height = railY + "px";
+  beam.style.clipPath = `polygon(${left}px ${bottom}px, ${left + pw}px ${bottom}px, ${cx + 5}px ${railY - 12}px, ${cx - 5}px ${railY - 12}px)`;
+  ghost.style.bottom = (H - railY + 26) + "px";
+  ghost.classList.toggle("l", left - px > W - px - (left + pw)); // 放在面板空出来的那一侧
+  floor.set(railY + stage.getBoundingClientRect().top, k);
+}
+
+/* ---------- Focus ---------- */
+const GLYPHS = "■□▪▫◆◇△▽◈※";
+function decode(el, text) {
+  cancelAnimationFrame(el._raf);
+  if (reduceMotion) { el.textContent = text; return; }
+  const start = performance.now(), dur = 460;
+  const tick = now => {
+    const p = Math.min(1, (now - start) / dur);
+    const r = Math.floor(p * text.length);
+    let s = text.slice(0, r);
+    for (let i = r; i < text.length; i++) s += text[i] === " " ? " " : GLYPHS[Math.random() * GLYPHS.length | 0];
+    el.textContent = s;
+    if (p < 1) el._raf = requestAnimationFrame(tick);
+  };
+  el._raf = requestAnimationFrame(tick);
+  clearTimeout(el._done);
+  el._done = setTimeout(() => { cancelAnimationFrame(el._raf); el.textContent = text; }, dur + 120);
+}
+
+function render() {
+  const el = vis[k]; if (!el) return;
+  const e = el._e, c = CATS[e.c];
+  const y = e.d.slice(0, 4);
+  panel.style.setProperty("--k", c.color);
+  reticle.style.setProperty("--k", c.color);
+  beam.style.setProperty("--k", c.color);
+  if (ghost.textContent !== y) {
+    ghost.textContent = y;
+    ghost.classList.remove("flip"); void ghost.offsetWidth; ghost.classList.add("flip");
+  }
+  panel.classList.remove("sweep"); void panel.offsetWidth; panel.classList.add("sweep");
+  $("#chapter").innerHTML = `<b>${y}</b>${YEARS[y][0]}`;
+  $("#seq").textContent = `${String(k + 1).padStart(2, "0")} / ${vis.length}`;
+  const pdate = $("#pdate");
+  pdate.textContent = fmtDate(e.d);
+  pdate.setAttribute("datetime", e.d);
+  const tplus = Math.round((e.time - LAUNCH_DAY) / DAY);
+  $("#ptplus").textContent = `T+${e.d.length === 7 ? "约 " : ""}${tplus} 天`;
+  decode($("#ptitle"), e.t);
+  const desc = $("#pdesc");
+  desc.textContent = e.x;
+  desc.classList.remove("in");
+  void desc.offsetWidth;
+  desc.classList.add("in");
+  $("#porg").textContent = e.o;
+  $("#pcat").textContent = c.name;
+  const prev = vis[k - 1]?._e;
+  const gap = prev ? Math.round((e.time - prev.time) / DAY) : null;
+  $("#pgap").textContent = e.d.length === 7 ? "日期只精确到月" : gap === null ? "编年起点" : gap === 0 ? "与上一节点同日" : `距上一节点 ${gap} 天`;
+
+  $("#prev").disabled = k <= 0;
+  $("#next").disabled = k >= vis.length - 1;
+  railHit.setAttribute("aria-valuemin", 1);
+  railHit.setAttribute("aria-valuemax", vis.length);
+  railHit.setAttribute("aria-valuenow", k + 1);
+  railHit.setAttribute("aria-valuetext", `${fmtDate(e.d)} ${e.t}`);
+  $("#live").textContent = `${fmtDate(e.d)}，${e.t}。${e.x}`;
+  layout();
+}
+
+function go(i) {
+  i = Math.max(0, Math.min(vis.length - 1, i));
+  if (i === k || i < 0) return;
+  const dir = Math.sign(i - k);
+  k = i;
+  spin += 90 * dir;
+  reticleSvg.style.transform = `rotate(${spin}deg)`;
+  warp(dir);
+  render();
+}
+
+/* ---------- Input ---------- */
+$("#prev").addEventListener("click", () => go(k - 1));
+$("#next").addEventListener("click", () => go(k + 1));
+
+document.addEventListener("keydown", e => {
+  if (e.altKey || e.ctrlKey || e.metaKey) return;
+  const map = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1, PageDown: 5, PageUp: -5 };
+  if (e.key in map) { e.preventDefault(); go(k + map[e.key]); }
+  else if (e.key === "Home") { e.preventDefault(); go(0); }
+  else if (e.key === "End") { e.preventDefault(); go(vis.length - 1); }
+});
+
+let acc = 0, lastWheel = 0, lastStep = 0;
+$("#app").addEventListener("wheel", e => {
+  if (e.ctrlKey || e.target.closest(".filters")) return;
+  e.preventDefault();
+  const now = performance.now();
+  if (now - lastWheel > 260) acc = 0;
+  lastWheel = now;
+  acc += Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY * (e.deltaMode === 1 ? 32 : 1);
+  if (Math.abs(acc) >= 50 && now - lastStep > 130) {
+    go(k + Math.sign(acc));
+    acc = 0; lastStep = now;
+  }
+}, { passive: false });
+
+// 沿光轨拖动：按未变形的比例换算，焦点正好落在指针下
+let scrubbing = false;
+const scrub = clientX => {
+  const r = stage.getBoundingClientRect();
+  const px = padX();
+  const L = r.left + px + 8, R = r.right - px - 8;
+  const f = Math.max(0, Math.min(1, (clientX - L) / (R - L)));
+  go(Math.round(f * (vis.length - 1)));
+};
+railHit.addEventListener("pointerdown", e => { scrubbing = true; railHit.setPointerCapture(e.pointerId); scrub(e.clientX); });
+railHit.addEventListener("pointermove", e => { if (scrubbing) scrub(e.clientX); });
+railHit.addEventListener("pointerup", () => { scrubbing = false; });
+railHit.addEventListener("pointercancel", () => { scrubbing = false; });
+
+/* ---------- Filters ---------- */
+const filtersEl = $("#filters");
+const keys = Object.keys(CATS);
+const active = new Set(keys);
+const chipAll = document.createElement("button");
+chipAll.className = "chip"; chipAll.type = "button";
+chipAll.innerHTML = `<i></i>全部<span class="n">${EVENTS.length}</span>`;
+chipAll.addEventListener("click", () => { keys.forEach(x => active.add(x)); applyFilter(); });
+filtersEl.appendChild(chipAll);
+const chips = {};
+Object.entries(CATS).forEach(([key, c]) => {
+  const b = document.createElement("button");
+  b.className = "chip"; b.type = "button";
+  b.style.setProperty("--k", c.color);
+  b.innerHTML = `<i></i>${c.name}<span class="n">${EVENTS.filter(e => e.c === key).length}</span>`;
+  b.addEventListener("click", () => {
+    if (active.size === keys.length) { active.clear(); active.add(key); } // 全选时点某类 = 只看这一类
+    else if (active.has(key)) active.delete(key);
+    else active.add(key);
+    if (!active.size) keys.forEach(x => active.add(x));
+    applyFilter();
+  });
+  filtersEl.appendChild(b);
+  chips[key] = b;
+});
+
+function applyFilter() {
+  chipAll.setAttribute("aria-pressed", active.size === keys.length);
+  Object.entries(chips).forEach(([key, b]) => b.setAttribute("aria-pressed", active.has(key)));
+  const curTime = vis[k]?._e.time ?? 0;
+  vis = dots.filter(el => active.has(el._e.c));
+  const next = vis.findIndex(el => el._e.time >= curTime);
+  k = next === -1 ? vis.length - 1 : next;
+  $("#hint").textContent = `滚动滚轮、按方向键，或沿光轨拖动，在 ${vis.length} 个节点间穿越`;
+  render();
+}
+
+let resizeT;
+addEventListener("resize", () => { clearTimeout(resizeT); resizeT = setTimeout(layout, 100); });
+(document.fonts?.ready || Promise.resolve()).then(() => {
+  applyFilter();
+  void document.body.offsetWidth; // 先落定首帧位置，再开启过渡
+  $("#app").classList.add("booted");
+  $("#floor").classList.add("on");
+});
+</script>
+</body>
+</html>

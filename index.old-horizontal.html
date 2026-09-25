@@ -1,0 +1,807 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>智能纪元编年史 · 2022—2026</title>
+<meta name="description" content="从 ChatGPT（GPT-3.5）上线开始，在一条横向时间轴上记录生成式 AI 的关键时刻。">
+<link rel="preconnect" href="https://fonts.loli.net">
+<link rel="stylesheet" href="https://fonts.loli.net/css2?family=Tektur:wdth,wght@75..100,400..900&family=Noto+Sans+SC:wght@400;500;700;900&display=swap">
+<style>
+  :root {
+    --void: #070A1F;
+    --deep: #0D1333;
+    --line: #1F2757;
+    --line-2: #3A4786;
+    --ion: #E6ECFF;
+    --dust: #8790BA;
+
+    --c-model: #6FE3FF;
+    --c-open: #7CF2B4;
+    --c-product: #FFB86B;
+    --c-policy: #FF7A93;
+    --c-science: #C8A2FF;
+    --c-industry: #F2E46B;
+
+    --num: "Tektur", "Bahnschrift", "DIN Alternate", sans-serif;
+    --text: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    --px: 4vw;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--void);
+    color: var(--ion);
+    font-family: var(--text);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  button { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--ion); outline-offset: 3px; border-radius: 3px; }
+
+  #stars { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; }
+  .glow {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background:
+      radial-gradient(30% 34% at 62% 48%, rgba(111, 227, 255, 0.12), transparent 70%),
+      radial-gradient(60% 50% at 72% 40%, rgba(200, 162, 255, 0.10), transparent 75%);
+  }
+
+  .app {
+    position: relative; z-index: 1;
+    height: 100vh; height: 100svh;
+    min-height: 600px;
+    display: grid;
+    grid-template-rows: auto 1fr auto auto;
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 10px;
+    padding: 22px var(--px) 14px;
+  }
+
+  /* ---------- Header ---------- */
+  .top { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px 40px; flex-wrap: wrap; }
+  .clock {
+    margin: 0;
+    font-family: var(--num);
+    font-weight: 300;
+    font-size: clamp(2.2rem, 5.4vw, 4.9rem);
+    line-height: 0.95;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .clock .tplus { color: var(--dust); font-weight: 400; margin-right: 0.12em; }
+  .clock .days { font-weight: 800; }
+  .clock .unit { font-family: var(--text); font-weight: 500; font-size: 0.3em; color: var(--dust); margin: 0 0.5em 0 0.2em; letter-spacing: 0; vertical-align: 0.9em; }
+  .clock .hms { font-weight: 400; color: #B8C2EE; font-size: 0.5em; }
+  .title-row { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 18px; margin-top: 12px; }
+  h1 { margin: 0; font-size: clamp(1.3rem, 2.2vw, 1.75rem); font-weight: 900; letter-spacing: 0.03em; line-height: 1.3; }
+  .lede { margin: 0; color: var(--dust); font-size: 0.9rem; }
+
+  .top > div { min-width: 0; }
+  .filters { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; max-width: 640px; min-width: 0; }
+  .detail { min-width: 0; }
+  .chip {
+    flex: none;
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 4px 12px;
+    font-size: 0.85rem; font-weight: 500; line-height: 1.5;
+    color: var(--dust);
+    background: rgba(7, 10, 31, 0.6);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    cursor: pointer;
+    transition: color .15s, border-color .15s, background .15s;
+  }
+  .chip i { width: 8px; height: 8px; border-radius: 50%; background: var(--k, var(--ion)); opacity: .35; }
+  .chip[aria-pressed="true"] { color: var(--ion); border-color: color-mix(in srgb, var(--k, var(--ion)) 55%, transparent); background: color-mix(in srgb, var(--k, var(--ion)) 12%, rgba(7, 10, 31, 0.6)); }
+  .chip[aria-pressed="true"] i { opacity: 1; }
+  .chip .n { font-family: var(--num); font-size: 0.8em; opacity: .7; }
+
+  /* ---------- The band: one horizontal line ---------- */
+  .band {
+    position: relative;
+    margin: 0 calc(-1 * var(--px));
+    overflow-x: auto; overflow-y: hidden;
+    scrollbar-width: none;
+    cursor: grab;
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 3%, #000 97%, transparent);
+            mask-image: linear-gradient(to right, transparent, #000 3%, #000 97%, transparent);
+  }
+  .band::-webkit-scrollbar { display: none; }
+  .band.dragging { cursor: grabbing; user-select: none; }
+  .track { position: relative; height: 100%; }
+
+  .yr {
+    position: absolute; top: 50%;
+    transform: translateY(-50%);
+    font-family: var(--num);
+    font-size: calc(var(--bandh, 400px) * 0.56);
+    line-height: 1;
+    letter-spacing: -0.04em;
+    color: transparent;
+    -webkit-text-stroke: 1.5px rgba(120, 136, 204, 0.2);
+    pointer-events: none;
+    user-select: none;
+    transition: -webkit-text-stroke-color .5s;
+  }
+  .yr.cur { -webkit-text-stroke-color: rgba(230, 236, 255, 0.3); }
+
+  .axis, .axis-lit { position: absolute; top: var(--axis); height: 2px; margin-top: -1px; }
+  .axis { background: var(--line-2); }
+  .axis-lit {
+    background: linear-gradient(to right, rgba(230, 236, 255, 0.2), var(--ion));
+    box-shadow: 0 0 12px rgba(230, 236, 255, 0.5);
+    transition: width .5s cubic-bezier(.2, .7, .2, 1);
+  }
+  .mt { position: absolute; top: var(--axis); width: 1px; height: 6px; background: var(--line-2); }
+  .mt.jan { height: 14px; margin-top: -7px; background: var(--dust); }
+  .yr-name {
+    position: absolute; top: calc(var(--axis) + 9px);
+    z-index: 1;
+    padding: 0 8px;
+    font-size: 12px; line-height: 18px;
+    color: var(--dust);
+    background: var(--void);
+    border-radius: 3px;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  .yr-name b { font-family: var(--num); font-weight: 600; color: var(--ion); margin-right: 6px; }
+  .today { position: absolute; top: 0; bottom: 0; width: 0; border-left: 1px dashed rgba(230, 236, 255, 0.35); }
+  .today span {
+    position: absolute; top: calc(var(--axis) - 9px); left: 10px;
+    font-size: 12px; line-height: 18px; color: var(--ion); white-space: nowrap;
+  }
+  .today span b { font-family: var(--num); font-weight: 600; }
+
+  .ev {
+    position: absolute;
+    width: max-content;
+    padding: 3px 10px 3px 12px;
+    background: none; border: 0; border-radius: 4px;
+    text-align: left;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background .2s;
+  }
+  .ev[hidden] { display: none; }
+  .ev::before {
+    content: ""; position: absolute; left: 0; width: 1px;
+    background: color-mix(in srgb, var(--k) 55%, transparent);
+  }
+  .ev.up::before { top: 6px; bottom: calc(-1 * var(--stem)); }
+  .ev.down::before { top: calc(-1 * var(--stem)); bottom: 6px; }
+  .ev::after {
+    content: ""; position: absolute; left: -5px;
+    width: 11px; height: 11px; border-radius: 50%;
+    background: var(--void);
+    border: 2px solid var(--k);
+    transition: background .2s, box-shadow .2s;
+  }
+  .ev.up::after { bottom: calc(-1 * var(--stem) - 5.5px); }
+  .ev.down::after { top: calc(-1 * var(--stem) - 5.5px); }
+  .ev.major::after { width: 15px; height: 15px; left: -7px; }
+  .ev.major.up::after { bottom: calc(-1 * var(--stem) - 7.5px); }
+  .ev.major.down::after { top: calc(-1 * var(--stem) - 7.5px); }
+  .ev .d { display: block; font-family: var(--num); font-weight: 600; font-size: 12px; line-height: 16px; color: var(--k); font-variant-numeric: tabular-nums; }
+  .ev .t { display: block; font-size: 14px; font-weight: 500; line-height: 22px; color: #C3CBF0; }
+  .ev.major .t { font-size: 18px; font-weight: 900; line-height: 26px; color: var(--ion); }
+  .ev:hover .t { color: #fff; }
+  .ev:hover::after { background: color-mix(in srgb, var(--k) 45%, var(--void)); }
+  .ev.sel { background: color-mix(in srgb, var(--k) 14%, transparent); }
+  .ev.sel .t { color: #fff; }
+  .ev.sel::after { background: var(--k); box-shadow: 0 0 0 4px color-mix(in srgb, var(--k) 22%, transparent), 0 0 18px var(--k); }
+
+  /* ---------- Detail ---------- */
+  .bottom { display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 12px 32px; min-height: 8.6rem; }
+  .detail { max-width: 46em; }
+  .detail-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; font-size: 0.85rem; color: var(--dust); }
+  .detail-meta time { font-family: var(--num); font-weight: 600; font-size: 1.05rem; color: var(--k); font-variant-numeric: tabular-nums; }
+  .detail-meta .cat { display: inline-flex; align-items: center; gap: 6px; }
+  .detail-meta .cat::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--k); }
+  .detail h2 { margin: 2px 0 0; font-size: clamp(1.25rem, 2vw, 1.6rem); font-weight: 900; line-height: 1.35; }
+  .detail p { margin: 4px 0 0; color: #B8C2EE; font-size: 0.95rem; line-height: 1.7; }
+  .step { display: flex; align-items: center; gap: 8px; }
+  .step .pos { font-family: var(--num); font-size: 0.9rem; color: var(--dust); margin-right: 6px; font-variant-numeric: tabular-nums; }
+  .step button {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 14px;
+    font-size: 0.88rem;
+    background: rgba(13, 19, 51, 0.7);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    cursor: pointer;
+    transition: border-color .15s;
+  }
+  .step button:hover { border-color: var(--dust); }
+  .step button:disabled { opacity: .35; cursor: default; }
+  .step svg { width: 14px; height: 14px; stroke: currentColor; }
+
+  /* ---------- Overview strip ---------- */
+  .mini { position: relative; cursor: pointer; touch-action: none; }
+  .bars { display: flex; align-items: flex-end; gap: 2px; height: 28px; }
+  .bars span {
+    flex: 1 1 0; min-width: 0;
+    height: var(--h); min-height: 2px;
+    background: var(--line);
+    border-radius: 1px;
+    transition: background .2s, height .3s;
+  }
+  .bars span.inview { background: var(--line-2); }
+  .bars span.now { background: var(--ion); }
+  .win {
+    position: absolute; top: -3px; height: 34px;
+    border: 1px solid rgba(230, 236, 255, 0.45);
+    background: rgba(230, 236, 255, 0.05);
+    border-radius: 3px;
+    pointer-events: none;
+  }
+  .ticks { position: relative; height: 16px; font: 500 11px/16px var(--num); color: var(--dust); }
+  .ticks span { position: absolute; top: 0; white-space: nowrap; }
+  .note { position: absolute; right: 0; top: 0; font-family: var(--text); font-size: 11px; }
+  @media (max-width: 1100px) { .note { display: none; } }
+
+  @media (max-width: 760px) {
+    .app { row-gap: 8px; padding-top: 16px; }
+    .filters { justify-content: flex-start; flex-wrap: nowrap; overflow-x: auto; max-width: 100%; scrollbar-width: none; margin: 0 calc(-1 * var(--px)); padding: 0 var(--px); }
+    .filters::-webkit-scrollbar { display: none; }
+    .lede { display: none; }
+    .bottom { grid-template-columns: 1fr; min-height: 11rem; align-items: start; }
+    .detail p { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+    .ev .t { font-size: 13px; line-height: 20px; }
+    .ev.major .t { font-size: 15px; line-height: 22px; }
+    .note { display: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<canvas id="stars" aria-hidden="true"></canvas>
+<div class="glow" aria-hidden="true"></div>
+
+<div class="app">
+  <header class="top">
+    <div>
+      <p class="clock" aria-label="距 ChatGPT 上线的时间">
+        <span class="tplus">T+</span><span class="days" id="days">0</span><span class="unit">天</span><span class="hms" id="hms">00:00:00</span>
+      </p>
+      <div class="title-row">
+        <h1>智能纪元编年史</h1>
+        <p class="lede">从 2022 年 11 月 30 日 ChatGPT 上线算起。滚动或拖动时间轴，点选节点查看详情。</p>
+      </div>
+    </div>
+    <div class="filters" id="filters" role="group" aria-label="按类别筛选"></div>
+  </header>
+
+  <section class="band" id="band" aria-label="时间轴，可用左右方向键在事件间移动">
+    <div class="track" id="track"></div>
+  </section>
+
+  <div class="bottom">
+    <article class="detail" id="detail" aria-live="polite"></article>
+    <div class="step">
+      <span class="pos" id="pos"></span>
+      <button type="button" id="prev"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>上一个</button>
+      <button type="button" id="next">下一个<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button>
+    </div>
+  </div>
+
+  <div class="mini" id="mini" aria-label="全程概览，点击或拖动跳转">
+    <div class="bars" id="bars"></div>
+    <div class="win" id="win"></div>
+    <div class="ticks" id="ticks"><span class="note">2026 年条目依据公开报道整理，日期只精确到月</span></div>
+  </div>
+</div>
+
+<script>
+const CATS = {
+  model:    { name: "模型发布",   color: "var(--c-model)" },
+  open:     { name: "开源",       color: "var(--c-open)" },
+  product:  { name: "产品与智能体", color: "var(--c-product)" },
+  policy:   { name: "治理与安全", color: "var(--c-policy)" },
+  science:  { name: "科学",       color: "var(--c-science)" },
+  industry: { name: "产业与资本", color: "var(--c-industry)" },
+};
+
+const YEARS = {
+  2022: ["一个聊天框", "发布时它只被当作一次研究预览。五天后，用户过了一百万。"],
+  2023: ["所有人都在追赶 GPT-4", "巨头入场，中国开启百模大战，开源权重流出，关于风险的公开信第一次登上头条。"],
+  2024: ["能看、能听，也开始思考", "视频生成、原生多模态、推理模型相继出现，AI 拿下两项诺贝尔奖。"],
+  2025: ["开源冲击与智能体之年", "DeepSeek 让低成本训练成为共识，模型从回答问题转向替人完成任务。"],
+  2026: ["前沿加速", "旗舰模型的迭代周期缩短到以周计，访问受限的最强模型开始出现。"],
+};
+
+// d: YYYY-MM-DD 或 YYYY-MM(仅到月)
+const EVENTS = [
+  { d: "2022-11-30", c: "product", o: "OpenAI", m: 1, t: "ChatGPT 上线", x: "以 GPT-3.5 系列模型为底座的对话界面作为研究预览免费开放，五天内用户突破一百万。一个聊天框，成了新纪元的起点。" },
+
+  { d: "2023-01", c: "industry", o: "OpenAI", t: "ChatGPT 月活用户破亿", x: "上线约两个月即达成，是当时增长最快的消费级应用。" },
+  { d: "2023-01-23", c: "industry", o: "微软", t: "微软追加投资 OpenAI", x: "宣布多年期、数十亿美元规模的扩大合作，据报道约 100 亿美元。" },
+  { d: "2023-02-07", c: "product", o: "微软", t: "新必应接入 GPT", x: "对话模型进入搜索引擎，沉寂多年的搜索之争重新开打。" },
+  { d: "2023-02-24", c: "open", o: "Meta", t: "LLaMA 发布", x: "面向研究者的模型权重很快在网上流出，开源大模型生态由此被点燃。" },
+  { d: "2023-03-14", c: "model", o: "OpenAI", m: 1, t: "GPT-4", x: "支持图像输入，在模拟律师资格考试中进入考生前 10%。同一天，Anthropic 发布第一代 Claude。" },
+  { d: "2023-03-16", c: "product", o: "百度", t: "文心一言发布", x: "中国第一个大厂对话大模型亮相，百模大战开场。" },
+  { d: "2023-03-21", c: "product", o: "Google", t: "Bard 开放测试", x: "谷歌仓促应战，对话产品在美国和英国开放候补。" },
+  { d: "2023-03-29", c: "policy", o: "未来生命研究所", t: "暂停巨型 AI 实验公开信", x: "上千名研究者与企业家联署，呼吁至少暂停六个月训练比 GPT-4 更强的系统。" },
+  { d: "2023-05-01", c: "policy", o: "Geoffrey Hinton", t: "Hinton 离开谷歌", x: "深度学习先驱表示，离开是为了能更自由地谈论 AI 的风险。" },
+  { d: "2023-05-30", c: "policy", o: "AI 安全中心", t: "一句话的灭绝风险声明", x: "数百位学者与实验室负责人签署：减轻 AI 带来的灭绝风险，应与流行病和核战争一样成为全球优先事项。同日，英伟达市值首次突破一万亿美元。" },
+  { d: "2023-07-18", c: "open", o: "Meta", t: "Llama 2 允许商用", x: "开源权重首次以宽松条款面向企业，成为无数衍生模型的底座。" },
+  { d: "2023-08-15", c: "policy", o: "中国", t: "《生成式人工智能服务管理暂行办法》施行", x: "全球较早专门针对生成式 AI 服务的监管规定之一，多家国产大模型随后获准面向公众上线。" },
+  { d: "2023-09-25", c: "product", o: "OpenAI", t: "ChatGPT 能看、能听、能说", x: "加入图像理解与语音对话，聊天框第一次有了眼睛和声音。" },
+  { d: "2023-11-01", c: "policy", o: "英国", t: "布莱切利 AI 安全峰会", x: "28 个国家和欧盟签署《布莱切利宣言》，前沿 AI 风险首次成为政府间议题。" },
+  { d: "2023-11-06", c: "product", o: "OpenAI", t: "首届开发者大会", x: "发布 GPT-4 Turbo 与可自定义的 GPTs，提出人人都能造自己的助手。" },
+  { d: "2023-11-17", c: "industry", o: "OpenAI", m: 1, t: "OpenAI 董事会风波", x: "Sam Altman 被董事会突然解雇，绝大多数员工联名要求其回归。五天后 Altman 复职，董事会改组。" },
+  { d: "2023-12-06", c: "model", o: "Google", t: "Gemini 1.0", x: "谷歌与 DeepMind 合并后的首个旗舰，从一开始就按原生多模态训练。" },
+  { d: "2023-12-11", c: "open", o: "Mistral", t: "Mixtral 8x7B", x: "开源的混合专家模型以小博大，让 MoE 架构走进主流。" },
+
+  { d: "2024-02-15", c: "model", o: "OpenAI", m: 1, t: "Sora 预览", x: "一分钟长度的高保真视频从文字生成，世界模拟器之争开始。同日，Gemini 1.5 带来百万 token 的上下文窗口。" },
+  { d: "2024-03-04", c: "model", o: "Anthropic", t: "Claude 3 家族", x: "Opus、Sonnet、Haiku 三档模型发布，Opus 在多项评测中与 GPT-4 并驾齐驱。" },
+  { d: "2024-03-13", c: "policy", o: "欧盟", t: "欧洲议会通过《人工智能法》", x: "全球第一部全面的 AI 法律，按风险等级分层监管。" },
+  { d: "2024-04-18", c: "open", o: "Meta", t: "Llama 3", x: "开源模型在对话质量上与闭源的差距进一步缩小。" },
+  { d: "2024-05-13", c: "model", o: "OpenAI", m: 1, t: "GPT-4o", x: "文字、语音、图像在同一个模型里端到端处理，实时语音对话的延迟接近人类。" },
+  { d: "2024-06-06", c: "model", o: "快手", t: "可灵视频模型", x: "中国团队的视频生成模型开放使用，生成视频的竞争变成全球赛。" },
+  { d: "2024-06-10", c: "product", o: "Apple", t: "Apple Intelligence", x: "苹果把生成式 AI 写进系统，并在 Siri 中接入 ChatGPT。" },
+  { d: "2024-06-20", c: "model", o: "Anthropic", t: "Claude 3.5 Sonnet", x: "中档价格给出超越上一代旗舰的能力，尤其擅长写代码。" },
+  { d: "2024-07-23", c: "open", o: "Meta", t: "Llama 3.1 405B", x: "第一个达到前沿水平的开源权重模型。" },
+  { d: "2024-08-01", c: "policy", o: "欧盟", t: "《人工智能法》生效", x: "相关条款在此后数年内分阶段适用。" },
+  { d: "2024-09-12", c: "model", o: "OpenAI", m: 1, t: "o1：会思考的模型", x: "模型先在内部推理再作答，数学与编程能力跃升。测试时计算成为规模定律之外新的扩展维度。" },
+  { d: "2024-10-08", c: "science", o: "诺贝尔奖", m: 1, t: "AI 拿下两项诺贝尔奖", x: "物理学奖授予 Hopfield 与 Hinton，表彰神经网络的奠基工作。次日化学奖授予 Hassabis、Jumper（AlphaFold）与 Baker。" },
+  { d: "2024-10-22", c: "product", o: "Anthropic", t: "Claude 学会操作电脑", x: "Computer Use 让模型看屏幕、移动鼠标、敲键盘，像人一样使用软件。" },
+  { d: "2024-11-25", c: "open", o: "Anthropic", t: "模型上下文协议 MCP", x: "开源的工具连接标准，后来被各大厂商采用，成为智能体接入外部世界的通用接口。" },
+  { d: "2024-12-09", c: "product", o: "OpenAI", t: "Sora 正式开放", x: "视频生成从演示变成人人可用的产品。" },
+  { d: "2024-12-11", c: "model", o: "Google", t: "Gemini 2.0", x: "谷歌宣布进入智能体时代，模型原生支持工具调用与图像、语音输出。" },
+  { d: "2024-12-20", c: "model", o: "OpenAI", t: "o3 公布", x: "在高算力配置下于 ARC-AGI-1 测试取得 87.5%，推理模型的上限被迅速推高。" },
+  { d: "2024-12-26", c: "open", o: "DeepSeek", t: "DeepSeek-V3", x: "开源 MoE 模型性能比肩顶级闭源，官方披露的最终训练成本约 560 万美元。" },
+
+  { d: "2025-01-20", c: "open", o: "DeepSeek", m: 1, t: "DeepSeek-R1", x: "开源推理模型比肩 o1，并公开了强化学习训练方法。一周后，英伟达单日市值蒸发近六千亿美元，创美股纪录。" },
+  { d: "2025-01-21", c: "industry", o: "OpenAI 等", t: "星际之门计划", x: "OpenAI、软银、甲骨文等宣布在美国投入最高 5000 亿美元建设 AI 算力。" },
+  { d: "2025-01-23", c: "product", o: "OpenAI", t: "Operator", x: "能自己打开浏览器、点击网页、完成下单等任务的智能体。" },
+  { d: "2025-02-02", c: "product", o: "OpenAI", t: "Deep Research", x: "花数十分钟自主检索、阅读上百个网页，写出带引用的研究报告。" },
+  { d: "2025-02-24", c: "product", o: "Anthropic", t: "Claude 3.7 Sonnet 与 Claude Code", x: "混合推理模型发布，同时推出在终端里直接读写代码库的编程智能体。" },
+  { d: "2025-02-27", c: "model", o: "OpenAI", t: "GPT-4.5", x: "规模最大的非推理模型，被视作预训练扩展路线的一次总结。" },
+  { d: "2025-03-06", c: "product", o: "Manus", t: "Manus 通用智能体", x: "中国团队发布的通用智能体演示在全球刷屏，邀请码一码难求。" },
+  { d: "2025-03-25", c: "product", o: "OpenAI / Google", t: "原生生图与 Gemini 2.5 Pro", x: "GPT-4o 原生图像生成掀起吉卜力风格热潮；同一天，谷歌发布登顶多个榜单的 Gemini 2.5 Pro。" },
+  { d: "2025-04-05", c: "open", o: "Meta", t: "Llama 4", x: "首批 MoE 架构的 Llama 发布，Scout 版本宣称支持千万 token 上下文。" },
+  { d: "2025-04-16", c: "model", o: "OpenAI", t: "o3 与 o4-mini", x: "推理模型第一次能在思考过程中自主调用搜索、代码执行和看图。" },
+  { d: "2025-04-29", c: "open", o: "阿里巴巴", t: "Qwen3", x: "通义千问开源全尺寸混合推理模型家族，成为全球衍生模型最多的开源系列之一。" },
+  { d: "2025-05-20", c: "model", o: "Google", t: "Veo 3", x: "视频生成第一次同步生成对白、音效与环境声。" },
+  { d: "2025-05-22", c: "model", o: "Anthropic", t: "Claude 4", x: "Opus 4 与 Sonnet 4 发布，可以连续数小时自主完成编程任务。" },
+  { d: "2025-07-09", c: "model", o: "xAI", t: "Grok 4", x: "在 ARC-AGI-2、Humanity's Last Exam 等高难度评测上刷新当时纪录。" },
+  { d: "2025-07-11", c: "open", o: "月之暗面", t: "Kimi K2", x: "万亿参数的开源 MoE 模型，主打智能体与工具调用能力。" },
+  { d: "2025-07-17", c: "product", o: "OpenAI", t: "ChatGPT Agent", x: "把网页操作、深度研究与代码执行合成一个能自己干活的智能体。" },
+  { d: "2025-07-19", c: "science", o: "OpenAI / DeepMind", m: 1, t: "IMO 金牌线", x: "两家实验室的模型在 2025 年国际数学奥林匹克中以自然语言写出证明，成绩达到金牌分数线。" },
+  { d: "2025-08-05", c: "open", o: "OpenAI", t: "gpt-oss", x: "OpenAI 自 GPT-2 之后首次发布开放权重的语言模型。同日，DeepMind 公布可实时交互的世界模型 Genie 3。" },
+  { d: "2025-08-07", c: "model", o: "OpenAI", m: 1, t: "GPT-5", x: "统一的快慢思考系统，自动判断何时深入推理，并成为 ChatGPT 所有用户的默认模型。" },
+  { d: "2025-09-29", c: "model", o: "Anthropic", t: "Claude Sonnet 4.5", x: "在真实软件工程评测中领先，可连续自主工作三十小时以上。" },
+  { d: "2025-09-30", c: "product", o: "OpenAI", t: "Sora 2 与 Sora App", x: "带声音的视频生成加上一个短视频社交应用，AI 视频开始有了自己的平台。" },
+  { d: "2025-11-18", c: "model", o: "Google", t: "Gemini 3", x: "连同智能体开发环境 Antigravity 与新版 Nano Banana 图像模型一起发布。" },
+  { d: "2025-11-24", c: "model", o: "Anthropic", t: "Claude Opus 4.5", x: "旗舰模型大幅降价，编程、智能体与电脑操作能力全面提升。" },
+  { d: "2025-12", c: "model", o: "OpenAI", t: "GPT-5.2", x: "距 5.1 仅隔数周，前沿模型的迭代节奏开始以周计。" },
+
+  { d: "2026-02", c: "model", o: "Anthropic / Google", t: "Claude Opus 4.6 与 Gemini 3.1 Pro", x: "两大旗舰在同月更新，编程与长任务能力继续拉升。" },
+  { d: "2026-03", c: "model", o: "OpenAI", t: "GPT-5.4", x: "OpenAI 在春季持续推出小版本迭代，mini 与 nano 版随后跟进。" },
+  { d: "2026-04", c: "model", o: "OpenAI", t: "GPT-5.5", x: "据报道代号 Spud，更高效，编程能力更强。" },
+  { d: "2026-04", c: "open", o: "DeepSeek", t: "DeepSeek V4", x: "Pro 与 Flash 两个版本以 MIT 许可开源，同月 Qwen 3.6、Kimi K2.6 相继发布。" },
+  { d: "2026-05", c: "model", o: "Anthropic", t: "Claude Opus 4.8", x: "Opus 4.x 系列的最后一版，距 4.7 仅约六周。" },
+  { d: "2026-06", c: "model", o: "Anthropic", m: 1, t: "Claude Fable 5 与受限的 Mythos 5", x: "Claude 5 家族登场。Fable 向公众开放，能力更强的 Mythos 只向受限对象提供，最强模型不再默认公开。" },
+  { d: "2026-07", c: "model", o: "Anthropic", t: "Claude Sonnet 5 与 Opus 5", x: "Sonnet 5 在月初发布；月底的 Opus 5 以约一半价格接近 Fable 的水平，支持百万 token 上下文。" },
+  { d: "2026-07", c: "open", o: "月之暗面", t: "Kimi K3", x: "开放权重发布，中国开源模型继续紧跟前沿。" },
+  { d: "2026-09", c: "model", o: "Anthropic", t: "Claude Fable 5.1", x: "Fable 与 Mythos 同步升级到 5.1。" },
+  { d: "2026-09", c: "model", o: "OpenAI", m: 1, t: "GPT-6", x: "新一代 GPT 系列分阶段推出，先向部分机构开放。编年记录暂止于此。" },
+];
+const LAUNCH = Date.UTC(2022, 10, 30, 18, 0, 0); // 2022-11-30 10:00 PST
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const $ = s => document.querySelector(s);
+
+/* ---------- Mission clock ---------- */
+(() => {
+  const daysEl = $("#days"), hmsEl = $("#hms");
+  const pad = n => String(n).padStart(2, "0");
+  const render = ms => {
+    const s = Math.floor(ms / 1000);
+    daysEl.textContent = Math.floor(s / 86400);
+    hmsEl.textContent = `${pad(Math.floor(s % 86400 / 3600))}:${pad(Math.floor(s % 3600 / 60))}:${pad(s % 60)}`;
+  };
+  const t0 = performance.now(), dur = reduceMotion ? 0 : 2200;
+  const frame = now => {
+    const k = dur ? Math.min(1, (now - t0) / dur) : 1;
+    render((Date.now() - LAUNCH) * (1 - Math.pow(1 - k, 4)));
+    if (k < 1) requestAnimationFrame(frame);
+    else setInterval(() => render(Date.now() - LAUNCH), 1000);
+  };
+  requestAnimationFrame(frame);
+})();
+
+/* ---------- Starfield: warp on load, then slow drift ---------- */
+(() => {
+  const cv = $("#stars"), ctx = cv.getContext("2d");
+  const tints = ["#E6ECFF", "#E6ECFF", "#E6ECFF", "#E6ECFF", "#6FE3FF", "#C8A2FF", "#FFB86B"];
+  let W, H, running = true;
+  const stars = [];
+  const N = innerWidth < 760 ? 220 : 460;
+  const resize = () => {
+    const dpr = Math.min(devicePixelRatio || 1, 2);
+    W = innerWidth; H = innerHeight;
+    cv.width = W * dpr; cv.height = H * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.fillStyle = "#070A1F"; ctx.fillRect(0, 0, W, H);
+  };
+  const spawn = s => {
+    s.x = (Math.random() - 0.5) * 2; s.y = (Math.random() - 0.5) * 2;
+    s.z = Math.random() * 0.9 + 0.1;
+    s.c = tints[Math.floor(Math.random() * tints.length)];
+    return s;
+  };
+  resize();
+  for (let i = 0; i < N; i++) stars.push(spawn({}));
+  addEventListener("resize", resize);
+  const t0 = performance.now();
+  const draw = now => {
+    if (!running) return;
+    const t = (now - t0) / 1000;
+    const v = reduceMotion ? 0 : 0.0007 + 0.05 * Math.exp(-t * 1.6);
+    const cx = W * 0.62, cy = H * 0.48, f = Math.max(W, H) * 0.5;
+    ctx.fillStyle = "rgba(7,10,31,0.55)";
+    ctx.fillRect(0, 0, W, H);
+    for (const s of stars) {
+      const pz = s.z;
+      s.z -= v;
+      if (s.z <= 0.02) { spawn(s); s.z = 1; continue; }
+      const sx = cx + s.x / s.z * f, sy = cy + s.y / s.z * f;
+      if (sx < -50 || sx > W + 50 || sy < -50 || sy > H + 50) { spawn(s); s.z = 1; continue; }
+      ctx.strokeStyle = s.c;
+      ctx.globalAlpha = Math.min(1, 0.3 + (1 - s.z) * 1.1) * 0.8;
+      ctx.lineWidth = Math.max(1, (1 - s.z) * 2.4);
+      ctx.beginPath(); ctx.moveTo(cx + s.x / pz * f, cy + s.y / pz * f); ctx.lineTo(sx + 0.1, sy + 0.1); ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+    requestAnimationFrame(draw);
+  };
+  requestAnimationFrame(draw);
+  document.addEventListener("visibilitychange", () => {
+    running = !document.hidden;
+    if (running) requestAnimationFrame(draw);
+  });
+})();
+
+/* ---------- Time scale ---------- */
+const DAY = 86400000;
+const START = Date.UTC(2022, 10, 1);
+const END = Date.UTC(2026, 8, 30);
+const TOTAL = (END - START) / DAY;
+const NOW_DAY = Math.min(TOTAL, (Date.now() - START) / DAY);
+// 只到月的条目放在当月 15 日
+const dayOf = d => (Date.UTC(+d.slice(0, 4), +d.slice(5, 7) - 1, d.length === 10 ? +d.slice(8) : 15) - START) / DAY;
+const fmtDate = d => d.length === 10 ? d.replace(/-/g, ".") : `${d.slice(0, 4)}.${d.slice(5, 7)}`;
+const PADL = 90, PADR = 260, GAP = 18, UP_GAP = 20, DOWN_GAP = 40;
+
+const band = $("#band"), track = $("#track");
+let S = 3, axisY = 0;
+
+/* ---------- Static layers: axis, month ticks, years, today ---------- */
+const axis = document.createElement("div"); axis.className = "axis";
+const axisLit = document.createElement("div"); axisLit.className = "axis-lit";
+track.append(axis, axisLit);
+
+const months = [];
+for (let y = 2022, m = 11; ; m++) {
+  if (m > 12) { m = 1; y++; }
+  if (y === 2026 && m > 9) break;
+  months.push({ key: `${y}-${String(m).padStart(2, "0")}`, y, m, day: (Date.UTC(y, m - 1, 1) - START) / DAY });
+}
+const monthTicks = months.map(mo => {
+  const el = document.createElement("div");
+  el.className = "mt" + (mo.m === 1 ? " jan" : "");
+  track.appendChild(el);
+  return el;
+});
+
+const yearMarks = Object.keys(YEARS).map((y, i, arr) => {
+  const day = y === "2022" ? dayOf("2022-11-20") : (Date.UTC(+y, 0, 1) - START) / DAY;
+  const k = i / (arr.length - 1);
+  const big = document.createElement("div");
+  big.className = "yr";
+  big.textContent = y;
+  // 字宽与字重随年份扩张：2022 最窄，2026 最宽
+  big.style.fontVariationSettings = `'wdth' ${75 + 25 * k}`;
+  big.style.fontWeight = 400 + Math.round(450 * k);
+  const name = document.createElement("div");
+  name.className = "yr-name";
+  name.innerHTML = `<b>${y}</b>${YEARS[y][0]}`;
+  track.prepend(big);
+  track.appendChild(name);
+  return { y, day, big, name };
+});
+
+const today = document.createElement("div");
+today.className = "today";
+track.appendChild(today);
+
+/* ---------- Events ---------- */
+const evEls = EVENTS
+  .map((e, i) => ({ e, i, day: dayOf(e.d) }))
+  .sort((a, b) => a.day - b.day || a.i - b.i)
+  .map(({ e, day }) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "ev" + (e.m ? " major" : "");
+    b.tabIndex = -1;
+    b.style.setProperty("--k", CATS[e.c].color);
+    b.innerHTML = `<span class="d">${fmtDate(e.d)}</span><span class="t">${e.t}</span>`;
+    b.setAttribute("aria-label", `${fmtDate(e.d)} ${e.t}`);
+    b._e = e; b._day = day;
+    b.addEventListener("click", () => { if (!suppressClick) select(b); });
+    track.appendChild(b);
+    return b;
+  });
+
+function measure() {
+  evEls.forEach(el => {
+    const hid = el.hidden;
+    el.hidden = false;
+    el._w = el.offsetWidth; el._h = el.offsetHeight;
+    el.hidden = hid;
+  });
+}
+
+// 贪心分配车道：上下交替，放不下就拉长时间轴
+function place(vis, s, capUp, capDown) {
+  const up = [], down = [], out = [];
+  for (const el of vis) {
+    const x = el._day * s;
+    let ok = false;
+    for (let i = 0; i < Math.max(capUp, capDown) && !ok; i++) {
+      if (i < capUp && !(up[i] > x)) { up[i] = x + el._w + GAP; out.push([el, true, i]); ok = true; }
+      else if (i < capDown && !(down[i] > x)) { down[i] = x + el._w + GAP; out.push([el, false, i]); ok = true; }
+    }
+    if (!ok) return null;
+  }
+  return out;
+}
+
+function layout() {
+  const W = band.clientWidth, H = band.clientHeight;
+  const centerDay = (band.scrollLeft + W / 2 - PADL) / S;
+  const vis = evEls.filter(el => !el.hidden);
+  const lh = Math.max(40, ...vis.map(el => el._h)) + 6;
+  axisY = Math.round((H + UP_GAP - DOWN_GAP) / 2);
+  const capUp = Math.max(1, Math.floor((axisY - UP_GAP - 4) / lh));
+  const capDown = Math.max(1, Math.floor((H - axisY - DOWN_GAP - 4) / lh));
+
+  let s = Math.max(1.2, (W - PADL - PADR) / TOTAL), placed = null;
+  for (let n = 0; n < 80 && !placed; n++) {
+    placed = place(vis, s, capUp, capDown);
+    if (!placed) s *= 1.07;
+  }
+  if (!placed) placed = place(vis, s, 99, 99);
+  S = s;
+
+  const X = day => PADL + day * S;
+  track.style.width = X(TOTAL) + PADR + "px";
+  track.style.setProperty("--axis", axisY + "px");
+  track.style.setProperty("--bandh", H + "px");
+
+  for (const [el, isUp, lane] of placed) {
+    let top, stem;
+    if (isUp) { const bottom = axisY - UP_GAP - lane * lh; top = bottom - el._h; stem = UP_GAP + lane * lh; }
+    else { top = axisY + DOWN_GAP + lane * lh; stem = DOWN_GAP + lane * lh; }
+    el.style.left = X(el._day) + "px";
+    el.style.top = top + "px";
+    el.style.setProperty("--stem", stem + "px");
+    el.classList.toggle("up", isUp);
+    el.classList.toggle("down", !isUp);
+  }
+
+  axis.style.left = axisLit.style.left = X(0) + "px";
+  axis.style.width = (NOW_DAY * S) + "px";
+  months.forEach((mo, i) => { monthTicks[i].style.left = X(mo.day) + "px"; });
+  yearMarks.forEach(ym => {
+    ym.big.style.left = X(ym.day) + 6 + "px";
+    ym.name.style.left = X(ym.day) + "px";
+  });
+  today.style.left = X(NOW_DAY) + "px";
+  today.innerHTML = `<span>今天 <b>T+${Math.floor((Date.now() - LAUNCH) / DAY)}</b></span>`;
+
+  band.scrollLeft = PADL + centerDay * S - W / 2;
+  if (sel) axisLit.style.width = (sel._day * S) + "px";
+  updateMini();
+}
+
+/* ---------- Selection & detail ---------- */
+let sel = null;
+const detail = $("#detail"), posEl = $("#pos"), prevBtn = $("#prev"), nextBtn = $("#next");
+const visible = () => evEls.filter(el => !el.hidden);
+
+function select(el, { center = false, focus = false } = {}) {
+  if (sel) { sel.classList.remove("sel"); sel.tabIndex = -1; }
+  sel = el;
+  el.classList.add("sel");
+  el.tabIndex = 0;
+  if (focus) el.focus({ preventScroll: true });
+
+  const e = el._e, c = CATS[e.c];
+  detail.style.setProperty("--k", c.color);
+  detail.innerHTML = `
+    <div class="detail-meta"><time datetime="${e.d}">${fmtDate(e.d)}</time><span>${e.o}</span><span class="cat">${c.name}</span>${e.d.length === 7 ? "<span>日期只精确到月</span>" : ""}</div>
+    <h2>${e.t}</h2>
+    <p>${e.x}</p>`;
+  const vis = visible(), i = vis.indexOf(el);
+  posEl.textContent = `${i + 1} / ${vis.length}`;
+  prevBtn.disabled = i <= 0;
+  nextBtn.disabled = i >= vis.length - 1;
+
+  axisLit.style.width = (el._day * S) + "px";
+  const y = e.d.slice(0, 4);
+  yearMarks.forEach(ym => ym.big.classList.toggle("cur", ym.y === y));
+
+  const x = parseFloat(el.style.left), W = band.clientWidth;
+  if (center || x < band.scrollLeft + 60 || x + el._w > band.scrollLeft + W - 60) {
+    band.scrollTo({ left: x + el._w / 2 - W / 2, behavior: reduceMotion ? "auto" : "smooth" });
+  }
+  updateMini();
+}
+
+function step(dir) {
+  const vis = visible(), i = vis.indexOf(sel);
+  const next = vis[Math.max(0, Math.min(vis.length - 1, i + dir))];
+  if (next) select(next, { center: true, focus: document.activeElement?.classList.contains("ev") });
+}
+prevBtn.addEventListener("click", () => step(-1));
+nextBtn.addEventListener("click", () => step(1));
+band.addEventListener("keydown", e => {
+  if (e.key === "ArrowRight") { e.preventDefault(); step(1); sel.focus({ preventScroll: true }); }
+  else if (e.key === "ArrowLeft") { e.preventDefault(); step(-1); sel.focus({ preventScroll: true }); }
+  else if (e.key === "Home" || e.key === "End") {
+    e.preventDefault();
+    const vis = visible();
+    select(e.key === "Home" ? vis[0] : vis[vis.length - 1], { center: true, focus: true });
+  }
+});
+
+/* ---------- Wheel & drag: vertical input moves the line sideways ---------- */
+const onWheel = e => {
+  if (e.ctrlKey) return;
+  const d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+  band.scrollLeft += e.deltaMode === 1 ? d * 32 : d;
+  e.preventDefault();
+};
+document.querySelector(".app").addEventListener("wheel", e => {
+  if (e.target.closest(".filters")) return;
+  onWheel(e);
+}, { passive: false });
+
+let drag = null, suppressClick = false;
+band.addEventListener("pointerdown", e => {
+  if (e.pointerType !== "mouse" || e.button !== 0) return;
+  drag = { x: e.clientX, left: band.scrollLeft, moved: false, id: e.pointerId };
+});
+band.addEventListener("pointermove", e => {
+  if (!drag) return;
+  const dx = e.clientX - drag.x;
+  if (!drag.moved && Math.abs(dx) > 4) {
+    drag.moved = true;
+    band.classList.add("dragging");
+    band.setPointerCapture(drag.id);
+  }
+  if (drag.moved) band.scrollLeft = drag.left - dx;
+});
+const endDrag = () => {
+  if (drag?.moved) { suppressClick = true; setTimeout(() => { suppressClick = false; }, 0); }
+  drag = null;
+  band.classList.remove("dragging");
+};
+band.addEventListener("pointerup", endDrag);
+band.addEventListener("pointercancel", endDrag);
+
+/* ---------- Overview strip ---------- */
+const mini = $("#mini"), win = $("#win"), barsEl = $("#bars"), ticksEl = $("#ticks");
+const barEls = months.map((mo, i) => {
+  const s = document.createElement("span");
+  barsEl.appendChild(s);
+  if (mo.m === 1) {
+    const t = document.createElement("span");
+    t.textContent = mo.y;
+    t.style.left = (mo.day / TOTAL * 100) + "%";
+    ticksEl.appendChild(t);
+  }
+  return s;
+});
+
+function updateCounts() {
+  const counts = {};
+  visible().forEach(el => { const k = el._e.d.slice(0, 7); counts[k] = (counts[k] || 0) + 1; });
+  const max = Math.max(1, ...Object.values(counts));
+  months.forEach((mo, i) => barEls[i].style.setProperty("--h", ((counts[mo.key] || 0) / max * 100) + "%"));
+}
+
+function updateMini() {
+  const span = TOTAL * S, W = band.clientWidth;
+  const a = (band.scrollLeft - PADL) / span, b = (band.scrollLeft + W - PADL) / span;
+  const l = Math.max(0, a), r = Math.min(1, b);
+  win.style.left = (l * 100) + "%";
+  win.style.width = Math.max(0.5, (r - l) * 100) + "%";
+  const selKey = sel?._e.d.slice(0, 7);
+  months.forEach((mo, i) => {
+    const f0 = mo.day / TOTAL, f1 = (months[i + 1]?.day ?? TOTAL) / TOTAL;
+    barEls[i].classList.toggle("inview", f1 > a && f0 < b);
+    barEls[i].classList.toggle("now", mo.key === selKey);
+  });
+}
+let raf = 0;
+band.addEventListener("scroll", () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; updateMini(); }); }, { passive: true });
+
+const jumpTo = clientX => {
+  const r = barsEl.getBoundingClientRect();
+  const f = Math.max(0, Math.min(1, (clientX - r.left) / r.width));
+  band.scrollLeft = PADL + f * TOTAL * S - band.clientWidth / 2;
+};
+let miniDrag = false;
+mini.addEventListener("pointerdown", e => { miniDrag = true; mini.setPointerCapture(e.pointerId); jumpTo(e.clientX); });
+mini.addEventListener("pointermove", e => { if (miniDrag) jumpTo(e.clientX); });
+mini.addEventListener("pointerup", () => { miniDrag = false; });
+mini.addEventListener("pointercancel", () => { miniDrag = false; });
+
+/* ---------- Filters ---------- */
+const filtersEl = $("#filters");
+const active = new Set(Object.keys(CATS));
+const allKeys = Object.keys(CATS);
+const chipAll = document.createElement("button");
+chipAll.className = "chip"; chipAll.type = "button";
+chipAll.innerHTML = `<i></i>全部<span class="n">${EVENTS.length}</span>`;
+chipAll.addEventListener("click", () => { allKeys.forEach(k => active.add(k)); applyFilter(); });
+filtersEl.appendChild(chipAll);
+const chips = {};
+Object.entries(CATS).forEach(([k, c]) => {
+  const b = document.createElement("button");
+  b.className = "chip"; b.type = "button";
+  b.style.setProperty("--k", c.color);
+  b.innerHTML = `<i></i>${c.name}<span class="n">${EVENTS.filter(e => e.c === k).length}</span>`;
+  b.addEventListener("click", () => {
+    if (active.size === allKeys.length) { active.clear(); active.add(k); } // 全选时点某类 = 只看这一类
+    else if (active.has(k)) active.delete(k);
+    else active.add(k);
+    if (!active.size) allKeys.forEach(x => active.add(x));
+    applyFilter();
+  });
+  filtersEl.appendChild(b);
+  chips[k] = b;
+});
+
+function applyFilter() {
+  chipAll.setAttribute("aria-pressed", active.size === allKeys.length);
+  Object.entries(chips).forEach(([k, b]) => b.setAttribute("aria-pressed", active.has(k)));
+  evEls.forEach(el => { el.hidden = !active.has(el._e.c); });
+  updateCounts();
+  layout();
+  const vis = visible();
+  if (!sel || sel.hidden) {
+    const day = sel ? sel._day : 0;
+    select(vis.find(el => el._day >= day) || vis[vis.length - 1], { center: true });
+  } else {
+    select(sel);
+  }
+}
+
+/* ---------- Boot ---------- */
+function boot() {
+  measure();
+  applyFilter();
+  band.scrollLeft = 0;
+  select(visible()[0]);
+}
+let resizeT;
+addEventListener("resize", () => {
+  clearTimeout(resizeT);
+  resizeT = setTimeout(() => { measure(); layout(); }, 120);
+});
+(document.fonts?.ready || Promise.resolve()).then(boot);
+</script>
+</body>
+</html>
