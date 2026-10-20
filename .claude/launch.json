@@ -3,8 +3,15 @@
   "configurations": [
     {
       "name": "chronicle",
-      "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "5178", "--directory", "E:/BNS"],
+      "runtimeExecutable": "py",
+      "runtimeArgs": [
+        "-3",
+        "-m",
+        "http.server",
+        "5178",
+        "--directory",
+        "E:/BNS"
+      ],
       "port": 5178
     }
   ]
