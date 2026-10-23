@@ -604,7 +604,16 @@ const EVENTS = [
   { d: "2026-10-12", c: "industry", o: "Character.AI", t: "Character.AI 破产，迪士尼接手", x: "被多起青少年相关诉讼拖垮，申请破产保护。迪士尼以 2000 万美元竞购部分资产，随后又同意接收大部分员工。第一代 AI 陪伴应用的明星公司就此谢幕。" },
   { d: "2026-10-14", c: "industry", o: "Anthropic", t: "Q3 营收 168 亿，调整后盈利", x: "IPO 前的投资者见面会上公布：第三季度营收环比增长 45%，调整后毛利率约 85%，连续两个季度调整后盈利，前三季度合计约 331 亿美元。上市预计在 11 月。" },
   { d: "2026-10-15", c: "open", o: "Meta", t: "Muse Spark Open", x: "8160 亿参数的 MoE，每 token 激活约 420 亿，百万上下文，开放权重，两台 Mac Studio 就能跑。8 月 Meta 还说 Muse Spark 不开源，这次部分回到开源路线；许可证仍有商用限制。" },
+  { d: "2026-10-17", c: "open", o: "DeepSeek", t: "DeepSeek V4.1 Flash 1017", x: "V4.1 Flash 的新检查点，编程智能体基准 DeepSWE 得 77.0，11 项基准全部超过上一版；同时向所有开发者开放 Search 与 Fetch API，让开源模型也能直接联网检索。" },
   { d: "2026-10-18", c: "industry", o: "Anthropic", t: "拿出 5% 股份成立公益基金", x: "按 5 月估值约合 480 亿美元，需股东批准；公司价值每上涨一半，董事会还可再追加 2%。加上创始人与员工的捐赠承诺，约两成股权已指定用于公益，受益对象之一是被 AI 冲击的劳动者。" },
+  { d: "2026-10-19", c: "model", o: "MiniMax / Inception", t: "MiniMax M3.1 Flash 与 Mercury 3", x: "MiniMax 发布约 4280 亿参数的轻量旗舰 M3.1 Flash，前端与界面生成被评接近 Opus 5.5；同日 Inception Labs 推出扩散式语言模型 Mercury 3。" },
+  { d: "2026-10-19", c: "industry", o: "Anthropic / Nscale", t: "与 Nscale 洽谈 450 亿美元算力合同", x: "继 Akamai 之后，Anthropic 据报又在与英国云厂商 Nscale 谈一笔 450 亿美元的算力合同，IPO 前的算力采购仍在加速。" },
+  { d: "2026-10-21", c: "policy", o: "OpenAI / Wiz", m: 1, t: "AI 发现 PHP 高危漏洞", x: "两个严重的远程代码执行漏洞，影响 PHP 过去十年的所有版本，WordPress、Drupal、Joomla 都受波及。发现者是用 GPT-5.6 Sol 的 Calif（OpenAI“Patch the Planet”计划）和用 Gemini 4 Argon 的 Wiz。细节在补丁前泄露，芬兰暂停政府网站，荷兰网络安全机构下线官网；OpenAI 拿出 10 亿美元补贴关键机构使用安全模型 Daybreak。" },
+  { d: "2026-10-21", c: "product", o: "Anthropic", t: "Claude Duet", x: "基于 Opus 5.5 的主动型个人智能体，开放研究预览：在云端虚拟机里运行，接入 6000 多个应用，每天早上给一份摘要，之后只在需要拍板时打扰；发消息、花钱、签文件前必须先经用户同意。至此 Meta Muse、OpenAI Dots、Claude Duet 三家“常驻智能体”到齐。" },
+  { d: "2026-10-21", c: "industry", o: "OpenAI / Google", t: "OpenAI 模型上架 Google Cloud", x: "GPT-6 Astra、GPT-6.1 Sol、GPT-6 Luna 和 Codex 进入 Google 的 Model Garden，先开私有预览。继 Azure、AWS、Oracle 之后，OpenAI 的模型覆盖了美国三大云，Google 开始转售最直接对手的模型。" },
+  { d: "2026-10-21", c: "industry", o: "Meta 等", t: "AI 融资潮：Meta 新股与独角兽", x: "Meta 计划发行一类新股票为 AI 基建筹资；成立一年的 Flapping Airplanes 以 60 亿美元估值融资 10 亿，法律 AI 公司 Legora 估值升至 88 亿。" },
+  { d: "2026-10-22", c: "industry", o: "DeepSeek", t: "DeepSeek 融资约 150 亿美元", x: "美国命令联邦民用机构移除 DeepSeek 产品的两天后，DeepSeek 据报融资约 1000 亿元人民币，宁德时代、腾讯在投资方之列，目标从 500 亿一路提到 1000 亿元，是中国最大的单笔融资之一。" },
+  { d: "2026-10-22", c: "industry", o: "OpenAI", t: "OpenAI 以 1.25 万亿估值再融 300 亿", x: "据报为 IPO 做准备的新一轮，估值比 9 月传闻的 1.4 万亿略低；此前有报道称其营收比预测少约 200 亿美元。" },
 ];
 
 const LAUNCH = Date.UTC(2022, 10, 30, 18, 0, 0); // 2022-11-30 10:00 PST
